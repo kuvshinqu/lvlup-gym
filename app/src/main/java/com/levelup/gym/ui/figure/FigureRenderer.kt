@@ -55,6 +55,7 @@ fun fitFor(art: ExerciseArt, w: Float, h: Float, pad: Float): Fit {
                 is Prop.Line -> { pts += prop.a; pts += prop.b }
                 is Prop.Disc -> { pts += prop.c + V(prop.r, prop.r); pts += prop.c - V(prop.r, prop.r) }
                 is Prop.Cable -> pts += prop.pulley
+                is Prop.Stack -> { pts += V(prop.x - 7f, prop.top - 8f); pts += V(prop.x + 7f, 92f) }
                 else -> {}
             }
         }
@@ -115,6 +116,21 @@ fun DrawScope.drawHero(art: ExerciseArt, t: Float, fit: Fit, glow: Float = 0.6f,
     val ink = if (dimmed) 0.55f else 1f
     fun c(col: Color, k: Float = 1f) = shade(col, k * ink)
 
+    // Machines: weight stacks and lever arms
+    val startKnee = Skeleton(art.start, art.frontView).legNear.joint
+    art.props.filterIsInstance<Prop.Stack>().forEach { st ->
+        val lever = art.props.filterIsInstance<Prop.Lever>().firstOrNull()
+        val to = if (st.toLever && lever != null) (lever.pivot ?: startKnee) else st.via
+        pen.drawStack(st, t, to, ink)
+    }
+    art.props.filterIsInstance<Prop.Lever>().forEach { lv ->
+        val pivot = lv.pivot ?: startKnee
+        val pad = anchor(sk, lv.anchor) + lv.offset
+        pen.brush(listOf(pivot, pad), 2.2f, c(P.iron), outline = true)
+        pen.disc(pivot, 2.2f, c(P.steel))
+        pen.disc(pivot, 0.8f, c(P.iron))
+    }
+
     // Props behind the body
     art.props.forEach { prop ->
         when (prop) {
@@ -126,6 +142,9 @@ fun DrawScope.drawHero(art: ExerciseArt, t: Float, fit: Fit, glow: Float = 0.6f,
                 val center2 = sk.legNear.end + dir(pose.foot) * (Body.FOOT * 0.5f)
                 val along = dir(prop.angle + 90f) * 14f
                 pen.brush(listOf(center2 + along + dir(pose.foot - 90f) * -1.5f, center2 - along), 3.5f, c(P.iron), outline = true)
+                // weight plates loaded on the sled's horns
+                val horn = center2 + dir(pose.foot - 90f) * -5f + along * 0.55f
+                pen.disc(horn, 6f, c(P.iron)); pen.disc(horn, 4.4f, c(shade(P.iron, 1.25f))); pen.disc(horn, 1.1f, c(P.steel))
             }
             else -> {}
         }
@@ -135,8 +154,8 @@ fun DrawScope.drawHero(art: ExerciseArt, t: Float, fit: Fit, glow: Float = 0.6f,
     }
 
     fun wash(m: Muscle): Color? = when (m) {
-        in art.primary -> P.musclePrimary.copy(alpha = 0.78f + 0.2f * glow)
-        in art.secondary -> P.muscleSecondary.copy(alpha = 0.55f + 0.15f * glow)
+        in art.primary -> P.musclePrimary.copy(alpha = 0.92f + 0.08f * glow)
+        in art.secondary -> P.muscleSecondary.copy(alpha = 0.85f)
         else -> null
     }
 
@@ -175,7 +194,7 @@ private val LIGHT = V(-0.55f, -0.83f)
 
 /** Small drawing toolkit for the painted look. All sizes in world units unless the name says raw. */
 private class Pen(val scope: DrawScope, val fit: Fit) {
-    val inkW = 0.85f
+    val inkW = 1.05f
 
     /** Smooth closed path through screen points (midpoint quadratics), like a loaded brush. */
     fun smoothPath(pts: List<Offset>, closed: Boolean = true): Path = Path().apply {
@@ -204,10 +223,10 @@ private class Pen(val scope: DrawScope, val fit: Fit) {
     }
 
     /** A brush stroke with a few bristle tracks, in world units. */
-    fun brush(pts: List<V>, width: Float, color: Color, outline: Boolean = false) {
+    fun brush(pts: List<V>, width: Float, color: Color, outline: Boolean = false, bristles: Boolean = false) {
         val o = pts.map { fit.o(it) }
         if (outline) brushRaw(o, fit.s(width + inkW * 2), FigurePalette.outline, bristles = false)
-        brushRaw(o, fit.s(width), color)
+        brushRaw(o, fit.s(width), color, bristles)
     }
 
     fun brushRaw(o: List<Offset>, w: Float, color: Color, bristles: Boolean = true) {
@@ -257,8 +276,8 @@ private class LimbShape(a: V, j: V, b: V, widths: FloatArray, seed: Int) {
     fun half(segment: Int, side: Int, from: Float = 0.1f, to: Float = 0.85f): List<V> {
         val base = if (segment == 0) 0 else 7
         val idx = (0..7).map { base + it }.filter { val s = (it - base) / 7f; s in from..to }
-        val inner = idx.map { spine[it] + normals[it] * (w[it] * 0.06f * side) }
-        val outer = idx.map { spine[it] + normals[it] * (w[it] * 0.44f * side) }
+        val inner = idx.map { spine[it] + normals[it] * (w[it] * -0.02f * side) }
+        val outer = idx.map { spine[it] + normals[it] * (w[it] * 0.42f * side) }
         return inner + outer.reversed()
     }
 
@@ -276,14 +295,13 @@ private fun Pen.paintLimb(limb: LimbShape, base: Color, k: Float) {
 
 private fun Pen.formStrokes(shape: LimbShape, base: Color, k: Float, widthK: Float) {
     val lit = shape.litSide()
-    brush(shape.sideLine(lit, 0.22f, 2, shape.spine.size - 4), widthK * 0.9f, tint(shade(base, k), Color.White, 0.32f).copy(alpha = 0.7f))
-    brush(shape.sideLine(-lit, 0.28f, 2, shape.spine.size - 3), widthK, shade(base, k * 0.72f).copy(alpha = 0.55f))
+    brush(shape.sideLine(lit, 0.2f, 2, shape.spine.size - 4), widthK * 0.7f, tint(shade(base, k), Color.White, 0.3f).copy(alpha = 0.5f))
 }
 
 private fun Pen.paintWash(points: List<V>, color: Color) {
     val path = smoothPath(points.map { fit.o(it) })
     scope.drawPath(path, color)
-    scope.drawPath(path, shade(color, 1.15f).copy(alpha = 0.5f), style = Stroke(fit.s(0.5f), join = StrokeJoin.Round))
+    scope.drawPath(path, shade(color.copy(alpha = 1f), 0.55f), style = Stroke(fit.s(0.55f), join = StrokeJoin.Round))
 }
 
 private fun Pen.drawArm(limb: Limb, k: Float, wash: (Muscle) -> Color?, seed: Int) {
@@ -414,4 +432,31 @@ private fun DrawScope.drawArrowHead(from: Offset, to: Offset, color: Color, size
         close()
     }
     drawPath(p, color)
+}
+
+/** A weight stack: frame, plates, pin; the top plates rise with [t]. Cable from its pulley to [to]. */
+private fun Pen.drawStack(st: Prop.Stack, t: Float, to: V?, k: Float) {
+    val P = FigurePalette
+    val half = 5f
+    val pulley = V(st.x, st.top - 3f)
+    // cable first, so the frame sits over it
+    val rise = st.lift * t
+    val plateH = 2.4f
+    val n = ((92f - (st.top + 12f)) / plateH).toInt().coerceIn(4, 12)
+    val stackTop = 92f - n * plateH
+    val lifted = 3
+    val liftedTop = stackTop - rise
+    scope.drawLine(P.steel.copy(alpha = 0.9f), fit.o(V(st.x, liftedTop)), fit.o(pulley), fit.s(0.6f))
+    if (to != null) scope.drawLine(P.steel.copy(alpha = 0.9f), fit.o(pulley), fit.o(to), fit.s(0.6f))
+    // frame
+    brush(listOf(V(st.x - half - 1.4f, 92f), V(st.x - half - 1.4f, st.top - 4f), V(st.x + half + 1.4f, st.top - 4f), V(st.x + half + 1.4f, 92f)), 1.6f, shade(P.iron, k), outline = true)
+    disc(pulley, 1.8f, shade(P.steel, k))
+    // guide rod
+    scope.drawLine(shade(P.steel, k * 0.8f), fit.o(V(st.x, st.top - 4f)), fit.o(V(st.x, 92f)), fit.s(0.5f))
+    for (i in 0 until n) {
+        val up = if (i >= n - lifted) rise else 0f
+        val y = 92f - (i + 1) * plateH - up
+        val col = if (i >= n - lifted) shade(P.gold, k * 0.9f) else shade(P.iron, k * 1.3f)
+        shape(listOf(fit.o(V(st.x - half, y)), fit.o(V(st.x + half, y)), fit.o(V(st.x + half, y + plateH - 0.3f)), fit.o(V(st.x - half, y + plateH - 0.3f))), col, smooth = false)
+    }
 }

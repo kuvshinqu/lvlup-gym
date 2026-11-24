@@ -29,6 +29,13 @@ sealed interface Prop {
     data class Poly(val points: List<V>, val material: Material) : Prop
     data class Line(val a: V, val b: V, val width: Float, val material: Material) : Prop
     data class Disc(val c: V, val r: Float, val material: Material) : Prop
+    /** Machine lever arm from a fixed pivot (default: the near knee in the start pose) to a pad at the anchor. */
+    data class Lever(val anchor: Anchor, val offset: V = V(0f, 0f), val pivot: V? = null) : Prop
+    /**
+     * Weight stack standing on the floor at [x], frame top at [top]. The top plates rise with the movement.
+     * A cable runs from the stack's pulley to [via] (a fixed pulley), or to the lever pivot when [toLever] is set.
+     */
+    data class Stack(val x: Float, val top: Float, val via: V? = null, val toLever: Boolean = false, val lift: Float = 7f) : Prop
 }
 
 data class ExerciseArt(
@@ -81,8 +88,8 @@ object ExerciseArts {
             ),
         ),
         "Push-up" to ExerciseArt(
-            start = Pose(hip = v(40.7, 73.9), torso = 66.9f, hand = v(68, 91), ankle = v(3, 90), foot = 150f, elbowBend = 1, kneeBend = -1),
-            finish = Pose(hip = v(42.5, 81), torso = 79f, hand = v(68, 91), ankle = v(3, 90), foot = 150f, elbowBend = 1, kneeBend = -1),
+            start = Pose(hip = v(40.7, 73.9), torso = 66.9f, hand = v(68, 91), ankle = v(1, 90), foot = 150f, elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(42.5, 81), torso = 79f, hand = v(68, 91), ankle = v(1, 90), foot = 150f, elbowBend = 1, kneeBend = -1),
             primary = setOf(CHEST), secondary = setOf(TRICEPS, SHOULDERS, CORE),
             trail = Anchor.SHOULDER,
         ),
@@ -103,13 +110,13 @@ object ExerciseArts {
             start = Pose(hip = v(45, 67), torso = -12f, hand = v(44, 12), ankle = v(67, 91), elbowBend = 1, kneeBend = -1),
             finish = Pose(hip = v(45, 67), torso = -12f, hand = v(48, 37), ankle = v(67, 91), elbowBend = 1, kneeBend = -1),
             primary = setOf(BACK), secondary = setOf(BICEPS),
-            props = flatBench(30, 56, 70) + listOf(Prop.Roller(Anchor.ANKLE, v(-3f, -22f), 3.4f), Prop.Cable(Anchor.HAND, v(42, -6))),
+            props = flatBench(30, 56, 70) + listOf(Prop.Stack(16f, 6f, via = v(42, -6)), line(16, -6, 42, -6, 2.5), Prop.Disc(v(42, -6), 2.4f, Material.STEEL), Prop.Roller(Anchor.ANKLE, v(-3f, -22f), 3.4f), Prop.Cable(Anchor.HAND, v(42, -6))),
         ),
         "Seated Cable Row" to ExerciseArt(
-            start = Pose(hip = v(35, 80), torso = 18f, hand = v(62, 62), ankle = v(70, 84), foot = 160f, elbowBend = 1, kneeBend = 1),
-            finish = Pose(hip = v(35, 80), torso = -6f, hand = v(46, 67), ankle = v(70, 84), foot = 160f, elbowBend = 1, kneeBend = 1),
+            start = Pose(hip = v(35, 80), torso = 18f, hand = v(62, 62), ankle = v(70, 84), foot = 160f, elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(35, 80), torso = -6f, hand = v(46, 67), ankle = v(70, 84), foot = 160f, elbowBend = 1, kneeBend = -1),
             primary = setOf(BACK), secondary = setOf(BICEPS),
-            props = listOf(rect(22, 84, 26, 4, Material.LEATHER), line(76, 72, 76, 92, 3), Prop.Cable(Anchor.HAND, v(78, 66)), Prop.Disc(v(78, 66), 2.5f, Material.STEEL)),
+            props = listOf(rect(22, 84, 26, 4, Material.LEATHER), Prop.Stack(90f, 46f, via = v(78, 66)), line(76, 72, 76, 92, 3), Prop.Cable(Anchor.HAND, v(78, 66)), Prop.Disc(v(78, 66), 2.5f, Material.STEEL)),
         ),
         "Deadlift" to ExerciseArt(
             start = Pose(hip = v(37, 60), torso = 76f, hand = v(58, 83), ankle = v(52, 91)),
@@ -131,8 +138,8 @@ object ExerciseArts {
             props = listOf(Prop.Barbell()),
         ),
         "Leg Press" to ExerciseArt(
-            start = Pose(hip = v(30, 70), torso = -62f, hand = v(36, 74), ankle = v(58, 56), foot = 150f, kneeBend = 1),
-            finish = Pose(hip = v(30, 70), torso = -62f, hand = v(36, 74), ankle = v(67, 49), foot = 150f, kneeBend = 1),
+            start = Pose(hip = v(30, 70), torso = -62f, hand = v(36, 74), ankle = v(58, 56), foot = 150f, kneeBend = -1),
+            finish = Pose(hip = v(30, 70), torso = -62f, hand = v(36, 74), ankle = v(67, 49), foot = 150f, kneeBend = -1),
             primary = setOf(QUADS, GLUTES), secondary = setOf(HAMSTRINGS),
             props = listOf(
                 Prop.Poly(listOf(v(24, 76), v(4, 62), v(1, 66), v(22, 81)), Material.LEATHER),
@@ -152,7 +159,7 @@ object ExerciseArts {
             start = Pose(hip = v(40, 60), torso = 90f, hand = v(72, 67), ankle = v(-1, 62), foot = 0f, elbowBend = -1, kneeBend = -1),
             finish = Pose(hip = v(40, 60), torso = 90f, hand = v(72, 67), ankle = v(26, 41), foot = 270f, elbowBend = -1, kneeBend = -1),
             primary = setOf(HAMSTRINGS), secondary = setOf(CALVES),
-            props = flatBench(18, 72, 64) + Prop.Roller(Anchor.ANKLE, v(0f, -3.5f), 3.4f),
+            props = flatBench(18, 72, 64) + listOf(Prop.Stack(-14f, 34f, toLever = true), Prop.Lever(Anchor.ANKLE, v(0f, -3.5f)), Prop.Roller(Anchor.ANKLE, v(0f, -3.5f), 3.4f)),
             trail = Anchor.ANKLE,
         ),
         "Leg Extension" to ExerciseArt(
@@ -162,6 +169,7 @@ object ExerciseArts {
             props = listOf(
                 rect(30, 66, 32, 5, Material.LEATHER), line(46, 71, 46, 92, 3),
                 Prop.Poly(listOf(v(29, 66), v(25, 36), v(30, 35), v(34, 66)), Material.LEATHER),
+                Prop.Stack(12f, 30f, toLever = true), Prop.Lever(Anchor.ANKLE, v(0f, 3.5f)),
                 Prop.Roller(Anchor.ANKLE, v(0f, 3.5f), 3.4f),
             ),
             trail = Anchor.ANKLE,
@@ -180,8 +188,8 @@ object ExerciseArts {
             props = listOf(Prop.Barbell()),
         ),
         "Dumbbell Shoulder Press" to ExerciseArt(
-            start = Pose(hip = v(45, 66), torso = -3f, hand = v(47, 27), ankle = v(68, 91), elbowBend = -1, kneeBend = -1),
-            finish = Pose(hip = v(45, 66), torso = -3f, hand = v(45, 10), ankle = v(68, 91), elbowBend = -1, kneeBend = -1),
+            start = Pose(hip = v(45, 66), torso = -3f, hand = v(51, 36), ankle = v(68, 91), elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(45, 66), torso = -3f, hand = v(45, 10), ankle = v(68, 91), elbowBend = 1, kneeBend = -1),
             primary = setOf(SHOULDERS), secondary = setOf(TRICEPS),
             props = listOf(
                 rect(34, 68, 22, 4, Material.LEATHER), line(45, 72, 45, 92, 3),
@@ -190,8 +198,8 @@ object ExerciseArts {
             ),
         ),
         "Lateral Raise" to ExerciseArt(
-            start = Pose(hip = v(50, 51), torso = 0f, hand = v(62, 51), handFar = v(38, 51), ankle = v(56, 91), ankleFar = v(44, 91), elbowBend = 1, elbowBendFar = -1, foot = 90f, footFar = 270f),
-            finish = Pose(hip = v(50, 51), torso = 0f, hand = v(87, 26), handFar = v(13, 26), ankle = v(56, 91), ankleFar = v(44, 91), elbowBend = 1, elbowBendFar = -1, foot = 90f, footFar = 270f),
+            start = Pose(hip = v(50, 51), torso = 0f, hand = v(61, 51.5), handFar = v(39, 51.5), ankle = v(56, 91), ankleFar = v(44, 91), elbowBend = 1, elbowBendFar = -1, foot = 90f, footFar = 270f),
+            finish = Pose(hip = v(50, 51), torso = 0f, hand = v(88, 24), handFar = v(12, 24), ankle = v(56, 91), ankleFar = v(44, 91), elbowBend = 1, elbowBendFar = -1, foot = 90f, footFar = 270f),
             primary = setOf(SHOULDERS),
             props = listOf(Prop.Dumbbell(), Prop.Dumbbell(Anchor.HAND_FAR)),
             frontView = true,
@@ -212,7 +220,7 @@ object ExerciseArts {
             start = Pose(hip = v(48, 51), torso = 10f, hand = v(62, 34), ankle = v(51, 91), elbowBend = 1),
             finish = Pose(hip = v(48, 51), torso = 10f, hand = v(56, 54), ankle = v(51, 91), elbowBend = 1),
             primary = setOf(TRICEPS),
-            props = listOf(line(78, -4, 78, 92, 3), Prop.Disc(v(76, -2), 2.5f, Material.STEEL), Prop.Cable(Anchor.HAND, v(76, -2))),
+            props = listOf(Prop.Stack(90f, 20f, via = v(76, -2)), line(78, -4, 78, 92, 3), Prop.Disc(v(76, -2), 2.5f, Material.STEEL), Prop.Cable(Anchor.HAND, v(76, -2))),
         ),
         "Overhead Tricep Extension" to ExerciseArt(
             start = Pose(hip = v(50, 51), torso = -2f, hand = v(43, 17), ankle = v(51, 91), elbowBend = 1),
@@ -251,8 +259,8 @@ object ExerciseArts {
             trail = Anchor.ANKLE,
         ),
         "Rowing Machine" to ExerciseArt(
-            start = Pose(hip = v(40, 80), torso = 32f, hand = v(69, 65), ankle = v(66, 84), foot = 150f, kneeBend = 1),
-            finish = Pose(hip = v(22, 80), torso = -22f, hand = v(32, 66), ankle = v(61, 84), foot = 150f, kneeBend = 1),
+            start = Pose(hip = v(40, 80), torso = 32f, hand = v(69, 65), ankle = v(66, 84), foot = 150f, kneeBend = -1),
+            finish = Pose(hip = v(22, 80), torso = -22f, hand = v(32, 66), ankle = v(61, 84), foot = 150f, kneeBend = -1),
             primary = setOf(BACK, QUADS), secondary = setOf(BICEPS, HAMSTRINGS),
             props = listOf(
                 line(4, 88, 84, 88, 3), rect(16, 83, 30, 3, Material.IRON),
