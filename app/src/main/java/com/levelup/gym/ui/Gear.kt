@@ -1,6 +1,21 @@
 package com.levelup.gym.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -64,22 +79,67 @@ object GearLooks {
     }
 }
 
-/** A drawn item in a slot frame. Shapes are drawn on a 48x48 grid with metal shading. */
+/** An item in a chunky slot tinted by its rarity. Shapes are drawn on a 48x48 grid. */
 @Composable
-fun GearIcon(gear: Gear?, slot: Slot, size: Dp, modifier: Modifier = Modifier) {
+fun GearIcon(gear: Gear?, slot: Slot, size: Dp, modifier: Modifier = Modifier, framed: Boolean = true) {
     Canvas(modifier.size(size)) {
         val k = this.size.minDimension / 48f
-        // recessed slot
-        val frame = gear?.let { Metals.rarityColor(it.rarity) } ?: Color(0xFF3A3F4C)
-        drawRoundRect(Brush.verticalGradient(listOf(Color(0xFF0B0D12), Color(0xFF1B1F29))), cornerRadius = CornerRadius(8 * k))
-        drawRoundRect(frame.copy(alpha = if (gear == null) 0.5f else 0.9f), cornerRadius = CornerRadius(8 * k), style = Stroke(1.6f * k))
-        if (gear != null) {
-            drawCircle(Brush.radialGradient(listOf(frame.copy(alpha = 0.28f), Color.Transparent), center = center, radius = 22 * k), 22 * k)
+        if (framed) {
+            val base = gear?.let { lerp(Metals.rarityColor(it.rarity), Color.Black, 0.35f) } ?: Color(0xFF1C2C55)
+            chunkyBlock(base, 10 * k, outline = 2.2f * k, shadow = 2.5f * k, lip = 3f * k, gloss = if (gear == null) 0.04f else 0.16f)
+            if (gear != null) drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.35f), Color.Transparent), center = Offset(24 * k, 22 * k), radius = 20 * k), 20 * k, Offset(24 * k, 22 * k))
         }
-        scale(k, pivot = Offset.Zero) {
-            val metal = Metals.of(gear?.rarity ?: Rarity.COMMON)
-            val alpha = if (gear == null) 0.18f else 1f
-            drawSlotShape(slot, metal, gear?.rarity ?: Rarity.COMMON, alpha)
+        val inset = if (framed) 0.82f else 1f
+        val shift = if (framed) Offset(24 * k * (1 - inset), 22 * k * (1 - inset)) else Offset.Zero
+        translate(shift.x, shift.y) {
+            scale(k * inset, pivot = Offset.Zero) {
+                val metal = Metals.of(gear?.rarity ?: Rarity.COMMON)
+                drawSlotShape(slot, metal, gear?.rarity ?: Rarity.COMMON, if (gear == null) 0.22f else 1f)
+            }
+        }
+    }
+}
+
+/** A collectible item card: rarity frame, big item art, name on a parchment strip. */
+@Composable
+fun ItemCard(gear: Gear, modifier: Modifier = Modifier, badge: String? = "+${gear.bonusPercent}%") {
+    val rc = Metals.rarityColor(gear.rarity)
+    Box(
+        modifier
+            .aspectRatio(0.74f)
+            .drawBehind {
+                chunkyBlock(rc, 14.dp.toPx(), shadow = 4.dp.toPx(), lip = 4.dp.toPx(), gloss = 0.18f)
+                // dark window for the art
+                val o = 7.dp.toPx()
+                drawRoundRect(GameColors.Ink, Offset(o, o + 14.dp.toPx()), Size(size.width - o * 2, size.height * 0.56f), CornerRadius(9.dp.toPx()))
+                drawRoundRect(
+                    Brush.radialGradient(listOf(lerp(rc, Color.White, 0.15f), lerp(rc, Color.Black, 0.55f), Color(0xFF0D1530)), center = Offset(size.width / 2, size.height * 0.42f), radius = size.width * 0.6f),
+                    Offset(o + 2.dp.toPx(), o + 16.dp.toPx()), Size(size.width - o * 2 - 4.dp.toPx(), size.height * 0.56f - 4.dp.toPx()), CornerRadius(7.dp.toPx()),
+                )
+            },
+    ) {
+        Column(Modifier.fillMaxSize().padding(start = 7.dp, end = 7.dp, top = 2.dp, bottom = 11.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            OutlinedText(gear.rarity.label.uppercase(), style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, outlineWidth = 2.5.dp)
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                GearIcon(gear, gear.slot, 64.dp, framed = false)
+            }
+            Box(
+                Modifier.fillMaxWidth().drawBehind { chunkyBlock(GameColors.Parchment, 6.dp.toPx(), outline = 1.8.dp.toPx(), shadow = 0f, lip = 2.dp.toPx(), gloss = 0f) }
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    gear.name, color = Color(0xFF3B2610), maxLines = 2, textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleSmall.copy(shadow = null, fontSize = 12.sp, lineHeight = 13.sp),
+                )
+            }
+        }
+        if (badge != null) {
+            Box(Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-6).dp)
+                .drawBehind { chunkyBlock(GameColors.Xp.let { lerp(it, Color.Black, 0.15f) }, size.height / 2, outline = 1.8.dp.toPx(), shadow = 1.5.dp.toPx(), lip = 2.dp.toPx(), gloss = 0.2f) }
+                .padding(start = 6.dp, end = 6.dp, top = 1.dp, bottom = 4.dp)) {
+                OutlinedText(badge, style = MaterialTheme.typography.labelSmall, fontSize = 11.sp, outlineWidth = 2.dp)
+            }
         }
     }
 }
@@ -87,11 +147,11 @@ fun GearIcon(gear: Gear?, slot: Slot, size: Dp, modifier: Modifier = Modifier) {
 private fun DrawScope.metalFill(path: Path, m: Metals.Metal, alpha: Float) {
     val b = path.getBounds()
     drawPath(path, Brush.linearGradient(listOf(m.light, m.mid, m.dark), Offset(b.left, b.top), Offset(b.right, b.bottom)), alpha = alpha)
-    drawPath(path, Color(0xFF0E0C0A), alpha = alpha, style = Stroke(1.4f, join = StrokeJoin.Round))
+    drawPath(path, GameColors.Ink, alpha = alpha, style = Stroke(2.4f, join = StrokeJoin.Round))
 }
 
 private fun DrawScope.highlight(from: Offset, to: Offset, alpha: Float) =
-    drawLine(Color.White.copy(alpha = 0.55f * alpha), from, to, 1.2f, cap = StrokeCap.Round)
+    drawLine(Color.White.copy(alpha = 0.75f * alpha), from, to, 2.2f, cap = StrokeCap.Round)
 
 private fun path(vararg pts: Pair<Float, Float>, close: Boolean = true) = Path().apply {
     pts.forEachIndexed { i, (x, y) -> if (i == 0) moveTo(x, y) else lineTo(x, y) }
@@ -149,7 +209,7 @@ private fun DrawScope.drawSlotShape(slot: Slot, m: Metals.Metal, rarity: Rarity,
                 cubicTo(12f, 38f, 10f, 41f, 9f, 40f); close()
             }
             drawPath(p, Brush.linearGradient(listOf(lerp(cloth, Color.White, 0.25f), cloth, lerp(cloth, Color.Black, 0.55f)), Offset(10f, 9f), Offset(38f, 40f)), alpha = a)
-            drawPath(p, Color(0xFF0E0C0A), alpha = a, style = Stroke(1.4f, join = StrokeJoin.Round))
+            drawPath(p, GameColors.Ink, alpha = a, style = Stroke(2.4f, join = StrokeJoin.Round))
             listOf(20f to 30f, 25f to 34f, 30f to 31f).forEach { (x1, x2) -> drawLine(Color.Black.copy(alpha = 0.35f), Offset(x1, 13f), Offset(x2 - 6f, 38f), 1.2f, alpha = a) }
             drawCircle(m.mid, 2.6f, Offset(24f, 10f), alpha = a)
             drawCircle(Color(0xFF0E0C0A), 2.6f, Offset(24f, 10f), alpha = a, style = Stroke(1f))
@@ -173,68 +233,140 @@ private fun DrawScope.drawSlotShape(slot: Slot, m: Metals.Metal, rarity: Rarity,
     }
 }
 
-/** A wooden chest with iron bands, drawn with wood grain and metal shading. [open] lifts the lid (0..1). */
-fun DrawScope.drawChest(tier: ChestTier, open: Float = 0f, glow: Float = 0f) {
+/** Colours of a chest tier: body, its shade, trims and the lock. */
+private data class ChestPaint(val body: Color, val bodyDark: Color, val trim: Color, val trimDark: Color, val lock: Color, val gem: Color?, val planks: Boolean)
+
+private fun paintFor(tier: ChestTier) = when (tier) {
+    ChestTier.WOODEN -> ChestPaint(Color(0xFFD08442), Color(0xFF8A4520), Color(0xFF8F9AB2), Color(0xFF4D566C), Color(0xFFFFC93C), null, true)
+    ChestTier.IRON -> ChestPaint(Color(0xFF7FA6D8), Color(0xFF3F5F94), Color(0xFFEFF4FA), Color(0xFF8FA0BC), Color(0xFFFFC93C), Color(0xFF59B8FF), false)
+    ChestTier.GOLDEN -> ChestPaint(Color(0xFFFFD555), Color(0xFFD2861A), Color(0xFFD0342C), Color(0xFF7E1A16), Color(0xFFFFF1B0), Color(0xFFE8473F), false)
+}
+
+/**
+ * A toy-like chest: thick ink outline, arched lid, chunky bands and corner caps, a big lock.
+ * [open] lifts and tips the lid back (0..1); [glow] lights the inside and throws rays.
+ */
+fun DrawScope.drawChest(tier: ChestTier, open: Float = 0f, glow: Float = 0f, rays: Float = 0f) {
+    val p = paintFor(tier)
     val w = size.width; val h = size.height
-    val bandMetal = when (tier) {
-        ChestTier.WOODEN -> Metals.of(Rarity.COMMON)
-        ChestTier.IRON -> Metals.of(Rarity.UNCOMMON)
-        ChestTier.GOLDEN -> Metals.of(Rarity.LEGENDARY)
-    }
-    val wood = if (tier == ChestTier.GOLDEN) Color(0xFF5A2E1A) else Color(0xFF7A4B2A)
-    val ink = Color(0xFF120D0A)
+    val ink = GameColors.Ink
+    val t = w * 0.032f
     val left = w * 0.12f; val right = w * 0.88f
-    val bodyTop = h * 0.48f; val bottom = h * 0.9f
-    // shadow
-    drawOval(Color.Black.copy(alpha = 0.45f), Offset(left - w * 0.02f, bottom - h * 0.03f), Size(right - left + w * 0.04f, h * 0.08f))
+    val seam = h * 0.52f; val bottom = h * 0.9f
+    val cx = w / 2
+
+    // light rays behind an open chest
     if (glow > 0f) {
-        drawCircle(Brush.radialGradient(listOf(Color(0xFFFFD873).copy(alpha = 0.7f * glow), Color.Transparent), center = Offset(w / 2, bodyTop), radius = w * 0.55f), w * 0.55f, Offset(w / 2, bodyTop))
+        val rc = Offset(cx, seam - h * 0.06f)
+        rotate(rays * 360f, rc) {
+            for (i in 0 until 12) {
+                val a = Math.toRadians(i * 30.0).toFloat()
+                val a2 = Math.toRadians(i * 30.0 + 12).toFloat()
+                val r = w * 0.9f
+                val ray = Path().apply {
+                    moveTo(rc.x, rc.y)
+                    lineTo(rc.x + r * kotlin.math.cos(a), rc.y + r * kotlin.math.sin(a))
+                    lineTo(rc.x + r * kotlin.math.cos(a2), rc.y + r * kotlin.math.sin(a2)); close()
+                }
+                drawPath(ray, Brush.radialGradient(listOf(Color(0xFFFFF1A8).copy(alpha = 0.55f * glow), Color.Transparent), center = rc, radius = r))
+            }
+        }
+        drawCircle(Brush.radialGradient(listOf(Color(0xFFFFF6C8).copy(alpha = 0.9f * glow), Color(0xFFFFC93C).copy(alpha = 0.35f * glow), Color.Transparent), center = rc, radius = w * 0.45f), w * 0.45f, rc)
     }
-    // body
-    drawRect(Brush.verticalGradient(listOf(lerp(wood, Color.White, 0.12f), wood, lerp(wood, Color.Black, 0.45f)), bodyTop, bottom), Offset(left, bodyTop), Size(right - left, bottom - bodyTop))
-    // planks and grain
-    val planks = 3
-    for (i in 1 until planks) {
-        val y = bodyTop + (bottom - bodyTop) * i / planks
-        drawLine(ink.copy(alpha = 0.6f), Offset(left, y), Offset(right, y), w * 0.008f)
-    }
-    for (i in 0 until 9) {
-        val y = bodyTop + (bottom - bodyTop) * (i + 0.5f) / 9
-        drawLine(Color.Black.copy(alpha = 0.12f), Offset(left + w * 0.03f * (i % 3), y), Offset(right - w * 0.05f * (i % 2), y + h * 0.006f), w * 0.004f)
-    }
-    drawRect(ink, Offset(left, bodyTop), Size(right - left, bottom - bodyTop), style = Stroke(w * 0.012f))
-    // lid (opens upward)
-    val lidH = h * 0.2f
-    val lift = open * h * 0.16f
-    val lidTop = bodyTop - lidH - lift
-    val lid = Path().apply {
-        moveTo(left, bodyTop - lift)
-        lineTo(left, lidTop + lidH * 0.45f)
-        cubicTo(left, lidTop - lidH * 0.1f, right, lidTop - lidH * 0.1f, right, lidTop + lidH * 0.45f)
-        lineTo(right, bodyTop - lift); close()
-    }
-    if (open > 0f) {
-        // inside glow
-        drawRect(Brush.verticalGradient(listOf(Color(0xFFFFE08A).copy(alpha = 0.9f * open), Color(0xFF3A1E0E)), bodyTop - lift, bodyTop + h * 0.04f), Offset(left + w * 0.02f, bodyTop - lift), Size(right - left - w * 0.04f, lift + h * 0.02f))
-    }
-    drawPath(lid, Brush.verticalGradient(listOf(lerp(wood, Color.White, 0.2f), wood, lerp(wood, Color.Black, 0.3f)), lidTop, bodyTop))
-    drawPath(lid, ink, style = Stroke(w * 0.012f, join = StrokeJoin.Round))
-    // iron bands
-    listOf(0.24f, 0.76f).forEach { fx ->
-        val x = left + (right - left) * fx
-        val bw = w * 0.06f
-        drawRect(Brush.horizontalGradient(listOf(bandMetal.light, bandMetal.mid, bandMetal.dark), x - bw / 2, x + bw / 2), Offset(x - bw / 2, bodyTop), Size(bw, bottom - bodyTop))
-        drawRect(Brush.horizontalGradient(listOf(bandMetal.light, bandMetal.mid, bandMetal.dark), x - bw / 2, x + bw / 2), Offset(x - bw / 2, lidTop + lidH * 0.12f), Size(bw, bodyTop - lift - lidTop - lidH * 0.12f))
-        listOf(bodyTop + h * 0.04f, bottom - h * 0.04f).forEach { y ->
-            drawCircle(bandMetal.light, w * 0.011f, Offset(x, y)); drawCircle(ink, w * 0.011f, Offset(x, y), style = Stroke(w * 0.004f))
+
+    // ground shadow
+    drawOval(Color.Black.copy(alpha = 0.35f), Offset(left - w * 0.03f, bottom - h * 0.035f), Size(right - left + w * 0.06f, h * 0.09f))
+
+    // ---- body
+    val body = Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(left, seam, right, bottom, CornerRadius(w * 0.05f))) }
+    drawPath(body, ink, style = Stroke(t * 2, join = StrokeJoin.Round))
+    drawPath(body, Brush.verticalGradient(listOf(lerp(p.body, Color.White, 0.15f), p.body, p.bodyDark), seam, bottom))
+    if (p.planks) {
+        for (i in 1..2) {
+            val y = seam + (bottom - seam) * i / 3f
+            drawLine(lerp(p.bodyDark, Color.Black, 0.3f), Offset(left + t, y), Offset(right - t, y), t * 0.55f)
+        }
+    } else {
+        // riveted plates
+        for (i in 0..5) {
+            val x = left + (right - left) * (0.08f + i * 0.168f)
+            drawCircle(lerp(p.body, Color.White, 0.45f), t * 0.42f, Offset(x, seam + h * 0.045f))
         }
     }
-    drawRect(Brush.verticalGradient(listOf(bandMetal.light, bandMetal.dark), bottom - h * 0.035f, bottom), Offset(left, bottom - h * 0.035f), Size(right - left, h * 0.035f))
-    // lock plate
-    val lw = w * 0.14f; val lh = h * 0.15f
-    val lx = w / 2 - lw / 2; val ly = bodyTop - lift * 0.0f - lh * 0.35f
-    drawRoundRect(Brush.linearGradient(listOf(bandMetal.light, bandMetal.mid, bandMetal.dark), Offset(lx, ly), Offset(lx + lw, ly + lh)), Offset(lx, ly), Size(lw, lh), CornerRadius(w * 0.015f))
-    drawRoundRect(ink, Offset(lx, ly), Size(lw, lh), CornerRadius(w * 0.015f), style = Stroke(w * 0.008f))
-    drawCircle(ink, w * 0.016f, Offset(w / 2, ly + lh * 0.42f))
-    drawRect(ink, Offset(w / 2 - w * 0.006f, ly + lh * 0.42f), Size(w * 0.012f, lh * 0.3f))
+    // inside of an open chest
+    if (open > 0f) {
+        val inside = Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(left + t, seam - h * 0.05f * open, right - t, seam + h * 0.05f, CornerRadius(w * 0.03f))) }
+        drawPath(inside, Brush.verticalGradient(listOf(Color(0xFFFFF3B5), Color(0xFFFFB627), Color(0xFF7A3A10)), seam - h * 0.05f, seam + h * 0.05f))
+        drawPath(inside, ink, style = Stroke(t, join = StrokeJoin.Round))
+    }
+
+    fun band(x: Float, top: Float, bot: Float) {
+        val bw = w * 0.1f
+        val r = androidx.compose.ui.geometry.RoundRect(x - bw / 2, top, x + bw / 2, bot, CornerRadius(w * 0.02f))
+        val path = Path().apply { addRoundRect(r) }
+        drawPath(path, Brush.horizontalGradient(listOf(lerp(p.trim, Color.White, 0.35f), p.trim, p.trimDark), x - bw / 2, x + bw / 2))
+        drawPath(path, ink, style = Stroke(t * 0.9f, join = StrokeJoin.Round))
+        drawCircle(lerp(p.trim, Color.White, 0.6f), t * 0.45f, Offset(x, bot - t * 1.6f))
+        drawCircle(lerp(p.trim, Color.White, 0.6f), t * 0.45f, Offset(x, top + t * 1.6f))
+    }
+    band(left + (right - left) * 0.22f, seam, bottom)
+    band(left + (right - left) * 0.78f, seam, bottom)
+    // corner caps
+    listOf(left, right).forEach { x ->
+        val dir = if (x == left) 1f else -1f
+        val cap = Path().apply {
+            moveTo(x - dir * t * 0.3f, bottom - h * 0.13f); lineTo(x + dir * w * 0.07f, bottom - h * 0.02f)
+            lineTo(x + dir * w * 0.07f, bottom + t * 0.3f); lineTo(x - dir * t * 0.3f, bottom + t * 0.3f); close()
+        }
+        drawPath(cap, Brush.verticalGradient(listOf(p.trim, p.trimDark), bottom - h * 0.13f, bottom))
+        drawPath(cap, ink, style = Stroke(t * 0.9f, join = StrokeJoin.Round))
+    }
+
+    // ---- lid (arched); opening lifts it and tips it back, showing less of its front
+    val lift = open * h * 0.2f
+    val squash = 1f - 0.55f * open
+    val lidBottom = seam - lift
+    val lidTop = lidBottom - h * 0.27f * squash
+    val over = w * 0.025f
+    val lid = Path().apply {
+        moveTo(left - over, lidBottom)
+        lineTo(left - over, lidTop + (lidBottom - lidTop) * 0.45f)
+        cubicTo(left - over, lidTop - (lidBottom - lidTop) * 0.12f, right + over, lidTop - (lidBottom - lidTop) * 0.12f, right + over, lidTop + (lidBottom - lidTop) * 0.45f)
+        lineTo(right + over, lidBottom); close()
+    }
+    drawPath(lid, ink, style = Stroke(t * 2, join = StrokeJoin.Round))
+    // as the lid tips back we see more of its dark underside
+    val under = lerp(p.bodyDark, Color.Black, 0.35f)
+    drawPath(lid, Brush.verticalGradient(listOf(lerp(lerp(p.body, Color.White, 0.3f), under, open * 0.7f), lerp(p.body, under, open * 0.7f), lerp(p.bodyDark, under, open)), lidTop, lidBottom))
+    if (p.planks) drawLine(lerp(p.bodyDark, Color.Black, 0.3f), Offset(left, lidTop + (lidBottom - lidTop) * 0.5f), Offset(right, lidTop + (lidBottom - lidTop) * 0.5f), t * 0.55f)
+    // gloss
+    drawOval(Color.White.copy(alpha = 0.35f * (1 - open)), Offset(left + w * 0.08f, lidTop + (lidBottom - lidTop) * 0.12f), Size(w * 0.3f, (lidBottom - lidTop) * 0.22f))
+    // lid bands and rim
+    listOf(0.22f, 0.78f).forEach { fx -> band(left + (right - left) * fx, lidTop + (lidBottom - lidTop) * 0.05f, lidBottom) }
+    val rim = Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(left - over, lidBottom - h * 0.06f, right + over, lidBottom + h * 0.01f, CornerRadius(w * 0.02f))) }
+    drawPath(rim, Brush.verticalGradient(listOf(lerp(p.trim, Color.White, 0.3f), p.trimDark), lidBottom - h * 0.06f, lidBottom))
+    drawPath(rim, ink, style = Stroke(t * 0.9f, join = StrokeJoin.Round))
+
+    // ---- lock: a fat shield with a keyhole (or a gem), sitting on the seam
+    if (open < 0.5f) {
+        val lw = w * 0.2f; val lh = h * 0.22f
+        val ly = seam - lh * 0.45f
+        val lock = Path().apply {
+            moveTo(cx - lw / 2, ly); lineTo(cx + lw / 2, ly); lineTo(cx + lw / 2, ly + lh * 0.55f)
+            quadraticTo(cx + lw / 2, ly + lh * 0.9f, cx, ly + lh); quadraticTo(cx - lw / 2, ly + lh * 0.9f, cx - lw / 2, ly + lh * 0.55f); close()
+        }
+        drawPath(lock, ink, style = Stroke(t * 1.6f, join = StrokeJoin.Round))
+        drawPath(lock, Brush.verticalGradient(listOf(lerp(p.lock, Color.White, 0.5f), p.lock, lerp(p.lock, Color(0xFF8A4D00), 0.55f)), ly, ly + lh))
+        drawOval(Color.White.copy(alpha = 0.45f), Offset(cx - lw * 0.32f, ly + lh * 0.08f), Size(lw * 0.3f, lh * 0.18f))
+        val g = p.gem
+        if (g != null) {
+            val gc = Offset(cx, ly + lh * 0.48f); val gr = lw * 0.22f
+            val gem = Path().apply { moveTo(gc.x, gc.y - gr); lineTo(gc.x + gr, gc.y); lineTo(gc.x, gc.y + gr); lineTo(gc.x - gr, gc.y); close() }
+            drawPath(gem, Brush.linearGradient(listOf(lerp(g, Color.White, 0.6f), g, lerp(g, Color.Black, 0.4f)), gc - Offset(gr, gr), gc + Offset(gr, gr)))
+            drawPath(gem, ink, style = Stroke(t * 0.8f, join = StrokeJoin.Round))
+        } else {
+            drawCircle(ink, lw * 0.11f, Offset(cx, ly + lh * 0.42f))
+            drawRect(ink, Offset(cx - lw * 0.05f, ly + lh * 0.42f), Size(lw * 0.1f, lh * 0.28f))
+        }
+    }
 }

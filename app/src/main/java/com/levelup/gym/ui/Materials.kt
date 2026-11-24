@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.dp
 import kotlin.random.Random
 
 /**
@@ -59,14 +60,22 @@ object Materials {
     val GoldDark = Color(0xFF6E4A12)
 }
 
-/** Stone wall behind every screen: cool dark gradient, grain and a vignette. */
+/** Night sky over the kingdom: deep blue with a faint heraldic lattice and a soft vignette. */
 fun Modifier.stoneBackground(): Modifier = drawBehind {
-    drawRect(Brush.verticalGradient(listOf(Color(0xFF1B1E26), Color(0xFF111318), Color(0xFF0A0B0E))))
-    drawRect(Materials.grainBrush, alpha = 0.22f)
+    drawRect(Brush.verticalGradient(listOf(Color(0xFF24478F), Color(0xFF163066), Color(0xFF0C1838))))
+    // diamond lattice, like a banner's field
+    val step = 46.dp.toPx()
+    val lattice = Color.White.copy(alpha = 0.035f)
+    var x = -size.height
+    while (x < size.width + size.height) {
+        drawLine(lattice, Offset(x, 0f), Offset(x + size.height, size.height), 1.5.dp.toPx())
+        drawLine(lattice, Offset(x + size.height, 0f), Offset(x, size.height), 1.5.dp.toPx())
+        x += step
+    }
     drawRect(
         Brush.radialGradient(
-            listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f)),
-            center = Offset(size.width / 2, size.height * 0.4f), radius = size.maxDimension * 0.75f,
+            listOf(Color.Transparent, Color(0xFF050A1A).copy(alpha = 0.6f)),
+            center = Offset(size.width / 2, size.height * 0.35f), radius = size.maxDimension * 0.8f,
         )
     )
 }

@@ -55,6 +55,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.ui.unit.sp
 
 private data class Tab(val route: String, val label: String, @DrawableRes val icon: Int)
 
@@ -102,49 +110,22 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
         contentColor = MaterialTheme.colorScheme.onBackground,
         snackbarHost = {
             SnackbarHost(snackbar) { data ->
-                Snackbar(
-                    data,
-                    containerColor = Color(0xFF1C2233),
-                    contentColor = GameColors.Gold,
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                )
+                Box(
+                    Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth()
+                        .drawBehind { chunkyBlock(GameColors.Parchment, 14.dp.toPx(), shadow = 3.dp.toPx(), lip = 3.dp.toPx(), gloss = 0f) }
+                        .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+                ) {
+                    Text(data.visuals.message, color = Color(0xFF4A3216), style = MaterialTheme.typography.titleSmall.copy(shadow = null))
+                }
             }
         },
         bottomBar = {
             if (showBar) {
-                NavigationBar(
-                    containerColor = Color.Transparent,
-                    modifier = Modifier.drawBehind {
-                        // iron bar along the bottom with grain and a lit top edge
-                        drawRect(Brush.verticalGradient(listOf(Color(0xFF2B2F38), Color(0xFF15171C), Color(0xFF0B0C0F))))
-                        drawRect(Materials.grainBrush, alpha = 0.2f)
-                        drawLine(Color.Black, Offset(0f, 0f), Offset(size.width, 0f), 2.dp.toPx())
-                        drawLine(Materials.SteelLight.copy(alpha = 0.35f), Offset(0f, 2.dp.toPx()), Offset(size.width, 2.dp.toPx()), 1.dp.toPx())
-                    },
-                ) {
-                    tabs.forEach { tab ->
-                        NavigationBarItem(
-                            selected = route == tab.route,
-                            onClick = {
-                                nav.navigate(tab.route) {
-                                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = {
-                                androidx.compose.foundation.Image(
-                                    painterResource(tab.icon), contentDescription = null,
-                                    modifier = Modifier.size(28.dp).alpha(if (route == tab.route) 1f else 0.55f),
-                                )
-                            },
-                            label = { Text(tab.label) },
-                            colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                            ),
-                        )
+                GameTabBar(tabs, route) { r ->
+                    nav.navigate(r) {
+                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 }
             }
@@ -202,13 +183,15 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
 
     levelUp?.let { e ->
         AlertDialog(
-            containerColor = Color(0xFF1A1F30),
+            containerColor = GameColors.Panel,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+            modifier = Modifier.border(3.dp, GameColors.Gold, androidx.compose.foundation.shape.RoundedCornerShape(22.dp)),
             onDismissRequest = { levelUp = null },
-            confirmButton = { TextButton(onClick = { levelUp = null }) { Text("Onward!") } },
+            confirmButton = { Button(onClick = { levelUp = null }, modifier = Modifier.fillMaxWidth()) { Text("Onward!") } },
             title = {
-                Text(
+                OutlinedText(
                     "LEVEL UP!", modifier = Modifier.fillMaxWidth(), color = GameColors.Gold, textAlign = TextAlign.Center,
-                    fontFamily = Fonts.Display, fontWeight = FontWeight.Black,
+                    style = MaterialTheme.typography.displaySmall, outlineWidth = 5.dp,
                 )
             },
             text = {
@@ -222,5 +205,48 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
                 }
             },
         )
+    }
+}
+
+
+/** Bottom tabs: the chosen tab rises as a lit tile with its name; the others rest as dim icons. */
+@Composable
+private fun GameTabBar(tabs: List<Tab>, route: String?, onSelect: (String) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .drawBehind {
+                drawRect(Brush.verticalGradient(listOf(Color(0xFF2A4C93), Color(0xFF1A3269), Color(0xFF101F47))))
+                drawRect(GameColors.Ink, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, 3.dp.toPx()))
+                drawRect(Color.White.copy(alpha = 0.18f), Offset(0f, 3.dp.toPx()), androidx.compose.ui.geometry.Size(size.width, 2.dp.toPx()))
+            }
+            .navigationBarsPadding()
+            .padding(horizontal = 6.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        tabs.forEach { tab ->
+            val selected = route == tab.route
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(64.dp)
+                    .clickable { onSelect(tab.route) },
+                contentAlignment = Alignment.Center,
+            ) {
+                if (selected) {
+                    Canvas(Modifier.fillMaxSize().padding(horizontal = 2.dp)) {
+                        chunkyBlock(GameColors.PanelLight, 14.dp.toPx(), shadow = 3.dp.toPx(), lip = 4.dp.toPx(), rim = GameColors.Gold, gloss = 0.18f)
+                    }
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(bottom = if (selected) 6.dp else 0.dp)) {
+                    androidx.compose.foundation.Image(
+                        painterResource(tab.icon), contentDescription = if (selected) null else tab.label,
+                        modifier = Modifier.size(if (selected) 34.dp else 30.dp).alpha(if (selected) 1f else 0.6f),
+                    )
+                    if (selected) OutlinedText(tab.label, style = MaterialTheme.typography.titleSmall, outlineWidth = 2.5.dp, fontSize = 12.sp)
+                    else Text(tab.label, style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.2.sp, shadow = null), color = GameColors.Muted, fontSize = 11.sp)
+                }
+            }
+        }
     }
 }

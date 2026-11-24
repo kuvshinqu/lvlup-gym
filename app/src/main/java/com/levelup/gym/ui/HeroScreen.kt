@@ -16,11 +16,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,6 +33,7 @@ import com.levelup.gym.game.UnitsFormat
 import com.levelup.gym.ui.figure.ExerciseArts
 import com.levelup.gym.ui.figure.HeroFigure
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.drawBehind
 
 @Composable
 fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -> Unit) {
@@ -48,45 +47,46 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
     val units by vm.units.collectAsStateWithLifecycle()
     val bodyWeight by vm.latestBodyWeight.collectAsStateWithLifecycle()
     val bodyWeights by vm.bodyWeights30d.collectAsStateWithLifecycle()
+    val treasury by vm.treasury.collectAsStateWithLifecycle()
+    val look by vm.heroLook.collectAsStateWithLifecycle()
 
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("HERO'S JOURNAL", style = MaterialTheme.typography.labelSmall, fontFamily = Fonts.Display, color = GameColors.Gold.copy(alpha = 0.8f), modifier = Modifier.weight(1f))
-                IconButton(onClick = onOpenSettings) { Icon(painterResource(R.drawable.ic_settings_key), "Settings", tint = Color.Unspecified, modifier = Modifier.size(26.dp)) }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ResourcePill("${treasury.gold}") { Coin(32.dp) }
+                if (treasury.unopened.isNotEmpty()) {
+                    ResourcePill("${treasury.unopened.size}") {
+                        androidx.compose.foundation.Canvas(Modifier.size(34.dp, 30.dp)) { drawChest(com.levelup.gym.game.ChestTier.valueOf(treasury.unopened.first().tier)) }
+                    }
+                }
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = onOpenSettings) { Icon(painterResource(R.drawable.ic_settings_key), "Settings", tint = Color.Unspecified, modifier = Modifier.size(30.dp)) }
             }
         }
 
         // Hero card
         item {
             GameCard(accent = GameColors.Gold) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        HeroFigure(ExerciseArts.idle, Modifier.size(width = 92.dp, height = 120.dp), t = 0f)
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(name, style = MaterialTheme.typography.headlineMedium)
-                            Text(Leveling.title(progress.level).uppercase(), color = GameColors.Gold, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("Total ${progress.totalXp} XP", style = MaterialTheme.typography.bodySmall, color = GameColors.Muted)
+                        HeroFigure(ExerciseArts.idle, Modifier.size(width = 96.dp, height = 132.dp), t = 0f, look = look)
+                        Spacer(Modifier.width(6.dp))
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            OutlinedText(name, style = MaterialTheme.typography.headlineMedium, outlineWidth = 4.dp, maxLines = 1)
+                            Text(Leveling.title(progress.level).uppercase(), color = GameColors.Gold, style = MaterialTheme.typography.labelSmall)
+                            Text("${progress.totalXp} XP earned", style = MaterialTheme.typography.bodySmall, color = GameColors.Muted)
                         }
-                        LevelBadge(progress.level, size = 76.dp)
+                        LevelBadge(progress.level, size = 78.dp)
                     }
-                    XpBar(progress.fraction, height = 14.dp)
-                    Row {
-                        Text(
-                            "${progress.xpIntoLevel} / ${progress.xpNeededForNext} XP",
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text(
-                            "${progress.xpNeededForNext - progress.xpIntoLevel} XP to level ${progress.level + 1}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = GameColors.Muted,
-                        )
-                    }
+                    XpBar(progress.fraction, label = "${progress.xpIntoLevel} / ${progress.xpNeededForNext}")
+                    Text(
+                        "${progress.xpNeededForNext - progress.xpIntoLevel} XP to level ${progress.level + 1}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = GameColors.Muted,
+                    )
                 }
             }
         }
@@ -115,14 +115,13 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
             GameCard(accent = GameColors.Arcane) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        MedievalIcon(R.drawable.ic_quest_scroll, 26.dp)
+                        MedievalIcon(R.drawable.ic_quest_scroll, 30.dp)
                         Spacer(Modifier.width(8.dp))
-                        Text("Weekly quest", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                        Text(
-                            "+${Leveling.WEEKLY_QUEST_XP} XP",
-                            color = GameColors.Arcane,
-                            style = MaterialTheme.typography.labelMedium,
-                        )
+                        Column(Modifier.weight(1f)) {
+                            OutlinedText("Weekly quest", style = MaterialTheme.typography.titleMedium, outlineWidth = 3.dp)
+                            Text("Reward: golden chest + ${Leveling.WEEKLY_QUEST_XP} XP", color = GameColors.Gold, style = MaterialTheme.typography.labelMedium)
+                        }
+                        androidx.compose.foundation.Canvas(Modifier.size(58.dp, 48.dp)) { drawChest(com.levelup.gym.game.ChestTier.GOLDEN) }
                     }
                     Text(
                         if (week >= Leveling.WEEKLY_QUEST_TARGET) "Complete! The realm is safe this week."
@@ -130,8 +129,7 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
                         style = MaterialTheme.typography.bodyMedium,
                         color = GameColors.Muted,
                     )
-                    XpBar(week.toFloat() / Leveling.WEEKLY_QUEST_TARGET, color = GameColors.Arcane)
-                    Text("${week.coerceAtMost(Leveling.WEEKLY_QUEST_TARGET)} / ${Leveling.WEEKLY_QUEST_TARGET}", style = MaterialTheme.typography.bodySmall)
+                    XpBar(week.toFloat() / Leveling.WEEKLY_QUEST_TARGET, color = GameColors.Arcane, label = "${week.coerceAtMost(Leveling.WEEKLY_QUEST_TARGET)} / ${Leveling.WEEKLY_QUEST_TARGET}")
                 }
             }
         }
@@ -141,24 +139,26 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
 
         // Skills
         item { SectionLabel("Skills") }
-        items(skills, key = { it.skill.muscleGroup }) { sp ->
-            GameCard {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    SkillIcon(sp.skill.muscleGroup, size = 44.dp)
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        items(skills.chunked(2), key = { row -> row.joinToString { it.skill.muscleGroup } }) { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { sp ->
+                    Column(
+                        Modifier.weight(1f)
+                            .drawBehind { chunkyBlock(GameColors.Panel, 14.dp.toPx(), shadow = 4.dp.toPx(), lip = 4.dp.toPx(), gloss = 0.07f) }
+                            .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(sp.skill.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                            Text("Lv ${sp.progress.level}", color = GameColors.Gold, fontWeight = FontWeight.Bold)
+                            SkillIcon(sp.skill.muscleGroup, size = 38.dp)
+                            Spacer(Modifier.weight(1f))
+                            LevelBadge(sp.progress.level, size = 38.dp)
                         }
-                        Text(
-                            "${sp.skill.muscleGroup} · ${sp.skill.flavor}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = GameColors.Muted,
-                        )
-                        XpBar(sp.progress.fraction, height = 8.dp)
+                        OutlinedText(sp.skill.name, style = MaterialTheme.typography.titleSmall, outlineWidth = 2.5.dp, maxLines = 1)
+                        Text(sp.skill.muscleGroup, style = MaterialTheme.typography.bodySmall, color = GameColors.Muted)
+                        XpBar(sp.progress.fraction, height = 10.dp)
                     }
                 }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
             }
         }
 

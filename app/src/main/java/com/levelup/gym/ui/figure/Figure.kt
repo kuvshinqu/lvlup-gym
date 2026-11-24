@@ -121,11 +121,26 @@ class Skeleton(val pose: Pose, val front: Boolean) {
 
 data class Limb(val start: V, val joint: V, val end: V)
 
-/** Two-bone IK. The end is clamped to what the limb can reach. */
-fun ik(start: V, target: V, l1: Float, l2: Float, bend: Int): Limb {
+/**
+ * Two-bone IK. The end is clamped to what the limb can reach.
+ * Near full reach the joint locks out: a standing leg or a pressed arm is drawn straight rather than
+ * slightly bent. The bones shorten by at most 3.5% to get there, smoothly, so animations don't pop.
+ */
+fun ik(start: V, target0: V, l1o: Float, l2o: Float, bend: Int): Limb {
+    val full = l1o + l2o
+    val dist = (target0 - start).length
+    val lockFrom = 0.85f * full
+    val lockAt = 0.965f * full
+    val k = when {
+        dist <= lockFrom -> 1f
+        dist < lockAt -> 1f - 0.035f * (dist - lockFrom) / (lockAt - lockFrom)
+        else -> (dist / full).coerceAtMost(1f)
+    }
+    val l1 = l1o * k; val l2 = l2o * k
+    val target = target0
     val d0 = target - start
     val u = d0.norm()
-    val d = d0.length.coerceIn(abs(l1 - l2) + 0.01f, l1 + l2 - 0.01f)
+    val d = d0.length.coerceIn(abs(l1 - l2) + 0.01f, l1 + l2 - 0.0001f)
     val a = (l1 * l1 - l2 * l2 + d * d) / (2 * d)
     val h = sqrt((l1 * l1 - a * a).coerceAtLeast(0f))
     val n = V(-u.y, u.x)

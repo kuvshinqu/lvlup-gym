@@ -29,7 +29,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -161,19 +160,16 @@ fun QuizScreen(vm: GymViewModel, onDone: () -> Unit) {
             }
             items(q.options.size) { i ->
                 val chosen = answers[q.id] == i
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .background(if (chosen) GameColors.Gold.copy(alpha = 0.15f) else GameColors.SurfaceHigh, RoundedCornerShape(12.dp))
-                        .border(1.dp, if (chosen) GameColors.Gold else GameColors.Track, RoundedCornerShape(12.dp))
-                        .clickable {
-                            answers[q.id] = i
-                            step++
-                        }
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                GameButton(
+                    onClick = {
+                        answers[q.id] = i
+                        step++
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    style = if (chosen) ButtonStyle.GOLD else ButtonStyle.BLUE,
+                    height = 62.dp,
                 ) {
-                    Text(q.options[i], style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    Text(q.options[i], style = MaterialTheme.typography.titleMedium.copy(shadow = TitleShadow), modifier = Modifier.weight(1f).padding(start = 6.dp))
                 }
             }
             if (step > 0) item { TextButton(onClick = { step-- }) { Text("Back") } }
@@ -313,7 +309,7 @@ private fun PlannedRow(e: PlannedExercise, onChange: (PlannedExercise) -> Unit, 
     if (e.reps in ranges) {
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             ranges.forEach { r ->
-                FilterChip(selected = e.reps == r, onClick = { onChange(e.copy(reps = r)) }, label = { Text(r) })
+                FilterChip(selected = e.reps == r, onClick = { onChange(e.copy(reps = r)) }, label = { Text(r, style = MaterialTheme.typography.labelMedium, maxLines = 1) })
             }
         }
     }
@@ -331,7 +327,7 @@ private fun ExercisePickerDialog(vm: GymViewModel, onDismiss: () -> Unit, onPick
     val shown = all.filter { query.isBlank() || it.first.contains(query, true) || it.second.contains(query, true) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = androidx.compose.ui.graphics.Color(0xFF1A1F30),
+        containerColor = GameColors.Panel,
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
         title = { Text("Pick an exercise") },
         text = {

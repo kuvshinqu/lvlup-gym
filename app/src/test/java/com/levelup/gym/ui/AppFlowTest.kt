@@ -83,9 +83,11 @@ class AppFlowTest {
 
         // Loot: the quest dropped an iron chest (it had a new best)
         compose.onNodeWithText("Treasury").performClick()
-        waitFor("Iron chest")
+        waitFor("Chests")
         shot("4b_treasury")
-        compose.onAllNodesWithText("Tap to open")[0].performClick()
+        compose.onAllNodesWithText("Open")[0].performClick()
+        compose.mainClock.advanceTimeBy(700)
+        shot("4c0_chest_drop")
         waitFor("Claim")
         shot("4c_chest_open")
         compose.onNodeWithText("Claim").performClick()
