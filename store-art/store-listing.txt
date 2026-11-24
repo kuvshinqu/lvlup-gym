@@ -1,0 +1,36 @@
+APP NAME (max 30)
+Level Up Gym: RPG Workout Log
+
+SHORT DESCRIPTION (max 80)
+Every rep earns XP. A gym log where your hero levels up as you get stronger.
+
+FULL DESCRIPTION (max 4000)
+Your training is the quest. Your hero gets stronger every time you do.
+
+Level Up Gym is a workout tracker built like an RPG. Log a set and your hero earns XP. Train a muscle group and its skill levels up. Lift more than ever before and you claim a breakthrough, with bonus XP.
+
+FORGE YOUR HERO
+- Earn XP for every set, cardio session and finished workout
+- Raise seven skills, one for each part of your body: chest, back, legs, shoulders, arms, core and stamina
+- Watch your hero level up, with a level-up moment worth the sweat
+
+FOLLOW A PROVEN QUEST
+- A 4-day upper/lower program, built on strength training research
+- Weekly quest: finish 4 workouts in a week for bonus XP
+- Or train your own way and add your own exercises
+
+LEARN EVERY MOVE
+- Each exercise has an animated drawing of your hero, from start to finish
+- The working muscles glow, so you know what you are training
+- Short form notes for safe, clean reps
+
+TRACK WHAT MATTERS
+- Weight and reps for lifts, time and distance for cardio
+- Your chronicle: every workout, every set, every personal best
+- Body weight log with a 30-day trend
+- Kilograms or pounds, kilometres or miles
+
+PRIVATE BY DESIGN
+No account, no sign-up, no internet connection needed. Your training data stays on your phone.
+
+Pick up the bar. Your hero is waiting.

@@ -1,0 +1,46 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Cinzel;src:url(cinzel.ttf)}
+@font-face{font-family:Inter;src:url(inter.ttf)}
+*{margin:0;box-sizing:border-box}
+body{width:1024px;height:500px;overflow:hidden;background:#0b0f1c}
+.c{position:relative;width:1024px;height:500px;overflow:hidden;
+ background:radial-gradient(ellipse 520px 420px at 740px 270px,#2a2f58 0%,#161a33 45%,#0b0f1c 80%)}
+.rays{position:absolute;left:740px;top:260px;width:1200px;height:1200px;margin:-600px 0 0 -600px;
+ background:repeating-conic-gradient(from 0deg,rgba(245,196,81,.07) 0 4deg,transparent 4deg 12deg);
+ -webkit-mask:radial-gradient(circle,#000 10%,transparent 55%)}
+.ring{position:absolute;left:740px;top:255px;border-radius:50%;transform:translate(-50%,-50%)}
+.r1{width:380px;height:380px;border:3px solid rgba(245,196,81,.55);box-shadow:0 0 40px rgba(245,196,81,.35),inset 0 0 40px rgba(245,196,81,.2)}
+.r2{width:430px;height:430px;border:1px dashed rgba(245,196,81,.35)}
+.hero{position:absolute;left:740px;bottom:28px;height:430px;transform:translateX(-50%);filter:drop-shadow(0 0 18px rgba(255,140,60,.35))}
+.floor{position:absolute;left:520px;right:-40px;bottom:10px;height:60px;background:radial-gradient(ellipse at 50% 30%,rgba(245,196,81,.35),transparent 65%)}
+.xp{position:absolute;font:800 26px Inter;color:#7CF29C;text-shadow:0 0 14px rgba(124,242,156,.8),0 2px 0 #0b0f1c}
+.lvl{position:absolute;left:790px;top:52px;white-space:nowrap;transform:rotate(5deg);padding:8px 20px;font:700 26px Cinzel;letter-spacing:3px;color:#1a1300;
+ background:linear-gradient(#ffe08a,#f5c451 55%,#c9932a);border:2px solid #fff1c2;box-shadow:0 0 30px rgba(245,196,81,.7)}
+.left{position:absolute;left:56px;top:62px;width:470px}
+.crest{width:64px;height:64px;vertical-align:middle;margin-right:14px}
+.brand{font:700 30px Cinzel;letter-spacing:4px;color:#f5c451;display:flex;align-items:center}
+h1{margin-top:34px;font:700 64px/1.02 Cinzel;color:#fff7e0;text-shadow:0 4px 24px rgba(0,0,0,.6)}
+h1 em{font-style:normal;color:#f5c451}
+.sub{margin-top:20px;font:500 24px/1.35 Inter;color:#c9cde6}
+.bar{margin-top:30px;width:400px}
+.bar .lab{display:flex;justify-content:space-between;font:700 18px Inter;color:#f5c451;letter-spacing:1px;margin-bottom:8px}
+.bar .track{height:18px;border:2px solid #f5c451;border-radius:10px;padding:2px;background:#0b0f1c}
+.bar .fill{height:100%;width:88%;border-radius:6px;background:linear-gradient(90deg,#3fbf6a,#7CF29C);box-shadow:0 0 14px rgba(124,242,156,.7)}
+.spark{position:absolute;width:6px;height:6px;border-radius:50%;background:#ffe08a;box-shadow:0 0 10px #f5c451}
+</style></head><body><div class="c">
+<div class="rays"></div><div class="ring r2"></div><div class="ring r1"></div><div class="floor"></div>
+<img class="hero" src="cut_squat.png">
+<div class="lvl">LEVEL UP</div>
+<div class="xp" style="left:575px;top:120px">+45 XP</div>
+<div class="xp" style="left:600px;top:330px;font-size:20px;opacity:.8">+30 XP</div>
+<div class="xp" style="left:900px;top:300px;font-size:22px;opacity:.9">+60 XP</div>
+<div class="spark" style="left:620px;top:200px"></div><div class="spark" style="left:880px;top:180px"></div>
+<div class="spark" style="left:960px;top:240px;width:4px;height:4px"></div><div class="spark" style="left:660px;top:90px;width:4px;height:4px"></div>
+<div class="spark" style="left:930px;top:400px"></div>
+<div class="left">
+ <div class="brand"><svg class="crest" viewBox="20 16 68 76"><path d="M54,21 L79,29 L77,56 Q73,75 54,87 Q35,75 31,56 L29,29 Z" fill="#1E2438" stroke="#F5C451" stroke-width="3.5" stroke-linejoin="round"/><path fill="#7CF29C" d="M36,52h4v14h-4z M41,48h4v22h-4z M63,48h4v22h-4z M68,52h4v14h-4z M45,57h18v4h-18z"/><path fill="#F5C451" d="M54,30 l9,9 h-5 v5 h-8 v-5 h-5z"/></svg>LEVEL UP GYM</div>
+ <h1>Every rep<br>earns <em>XP</em></h1>
+ <div class="sub">Log your lifts. Level up your hero.</div>
+ <div class="bar"><div class="lab"><span>LV 7</span><span>LV 8</span></div><div class="track"><div class="fill"></div></div></div>
+</div>
+</div></body></html>
