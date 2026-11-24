@@ -38,10 +38,11 @@ class FigureGalleryTest {
 
     @Test fun allExercisesHaveArt() {
         DEFAULT_EXERCISES.forEach { assertTrue("${it.name} has no art", ExerciseArts.forName(it.name) != null) }
+        com.levelup.gym.game.ExerciseLibrary.all.forEach { assertTrue("${it.name} has no art", ExerciseArts.forName(it.name) != null) }
     }
 
     @Test fun contactSheets() {
-        val names = DEFAULT_EXERCISES.map { it.name }
+        val names = ExerciseArts.names.toList()
         val pages = names.chunked(8)
         var page by mutableIntStateOf(0)
         compose.setContent {

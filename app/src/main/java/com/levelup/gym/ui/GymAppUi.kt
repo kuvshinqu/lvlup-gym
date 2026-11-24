@@ -88,8 +88,10 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
         }
     }
 
+    // First launch: the Hero's Trial picks a starting program.
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
+    LaunchedEffect(route) { if (route == "hero" && !vm.quizDone.value) nav.navigate("quiz") }
     val showBar = tabs.any { it.route == route }
 
     Scaffold(
@@ -153,10 +155,27 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
                 )
             }
             composable("program") {
-                ProgramScreen(vm, onOpenWorkout = { nav.navigate("workout") }, onOpenExercise = { nav.navigate("exercise/$it") })
+                ProgramScreen(
+                    vm, onOpenWorkout = { nav.navigate("workout") }, onOpenExercise = { nav.navigate("exercise/$it") },
+                    onChangeProgram = { nav.navigate("programs") }, onOpenQuiz = { nav.navigate("quiz") },
+                )
+            }
+            composable("programs") {
+                ProgramsScreen(
+                    vm, onBack = { nav.popBackStack() }, onOpenQuiz = { nav.navigate("quiz") },
+                    onBuild = { id -> nav.navigate(if (id == null) "builder" else "builder?id=$id") },
+                )
+            }
+            composable("quiz") { QuizScreen(vm, onDone = { nav.popBackStack() }) }
+            composable("library") { LibraryScreen(vm, onBack = { nav.popBackStack() }) }
+            composable(
+                "builder?id={id}",
+                arguments = listOf(navArgument("id") { type = NavType.StringType; nullable = true; defaultValue = null }),
+            ) { entry ->
+                ProgramBuilderScreen(vm, entry.arguments?.getString("id"), onDone = { nav.popBackStack() })
             }
             composable("history") { HistoryScreen(vm, onOpen = { nav.navigate("history/$it") }) }
-            composable("exercises") { ExercisesScreen(vm, onOpenExercise = { nav.navigate("exercise/$it") }) }
+            composable("exercises") { ExercisesScreen(vm, onOpenExercise = { nav.navigate("exercise/$it") }, onOpenLibrary = { nav.navigate("library") }) }
             composable("workout") {
                 WorkoutScreen(vm, onClose = { nav.popBackStack() }, onOpenExercise = { nav.navigate("exercise/$it") })
             }

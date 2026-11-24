@@ -51,7 +51,6 @@ import com.levelup.gym.data.ExerciseEntity
 import com.levelup.gym.data.ExerciseKind
 import com.levelup.gym.game.Leveling
 import com.levelup.gym.game.Skills
-import com.levelup.gym.game.StarterProgram
 import com.levelup.gym.game.UnitsFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -75,7 +74,7 @@ fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit, onOpenExercise: (Long) 
     var pickerOpen by remember { mutableStateOf(false) }
     var confirmDiscard by remember { mutableStateOf(false) }
 
-    val plan = StarterProgram.day(workout?.planDayId)
+    val plan = vm.planDay(workout?.planDayId)
     val selected = exercises.firstOrNull { it.id == selectedId }
 
     // Pick the first planned exercise by default.

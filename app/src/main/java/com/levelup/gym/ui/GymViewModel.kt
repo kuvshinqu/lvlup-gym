@@ -19,7 +19,11 @@ import com.levelup.gym.game.Leveling
 import com.levelup.gym.game.PlanDay
 import com.levelup.gym.game.Skill
 import com.levelup.gym.game.Skills
-import com.levelup.gym.game.StarterProgram
+import com.levelup.gym.game.Programs
+import com.levelup.gym.game.Program
+import com.levelup.gym.game.ProgramStore
+import com.levelup.gym.game.ExerciseLibrary
+import com.levelup.gym.game.LibraryExercise
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
@@ -106,8 +110,60 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
     val workoutsThisWeek: StateFlow<Int> =
         uid.flatMapLatest { dao.finishedWorkoutCountSince(it, weekStartMillis()) }.state(0)
 
+    /** The hero's own programs. */
+    val customPrograms: StateFlow<List<Program>> =
+        settings.customProgramsJson.map { ProgramStore.decode(it) }.state(ProgramStore.decode(settings.customProgramsJson.value))
+
+    /** The quest line the hero follows. */
+    val activeProgram: StateFlow<Program> =
+        kotlinx.coroutines.flow.combine(settings.programId, customPrograms) { id, custom ->
+            (Programs.builtIn + custom).firstOrNull { it.id == id } ?: Programs.default
+        }.state(Programs.default)
+
+    val quizDone: StateFlow<Boolean> = settings.quizDone
+
+    fun chooseProgram(id: String) = settings.setProgramId(id)
+
+    fun finishQuiz(programId: String) {
+        settings.setQuizDone()
+        chooseProgram(programId)
+    }
+
+    fun skipQuiz() = settings.setQuizDone()
+
+    fun planDay(id: String?): PlanDay? = Programs.day(id, customPrograms.value)
+
+    fun saveCustomProgram(program: Program) {
+        val list = customPrograms.value.filter { it.id != program.id } + program.copy(custom = true)
+        settings.setCustomProgramsJson(ProgramStore.encode(list))
+        viewModelScope.launch { ensureExercises(program.days.flatMap { d -> d.exercises.map { it.exerciseName } }) }
+    }
+
+    fun deleteCustomProgram(id: String) {
+        settings.setCustomProgramsJson(ProgramStore.encode(customPrograms.value.filter { it.id != id }))
+        if (settings.programId.value == id) settings.setProgramId(Programs.default.id)
+    }
+
     val nextPlanDay: StateFlow<PlanDay> =
-        uid.flatMapLatest { dao.lastPlanDayId(it) }.map { StarterProgram.nextDay(it) }.state(StarterProgram.days.first())
+        kotlinx.coroutines.flow.combine(uid.flatMapLatest { dao.lastPlanDayId(it) }, activeProgram) { last, program ->
+            program.nextDay(last)
+        }.state(Programs.default.days.first())
+
+    /** Adds any named exercises the hero doesn't have yet, taking details from the library. */
+    private suspend fun ensureExercises(names: List<String>) {
+        val user = userId.value ?: return
+        val have = dao.exercises(user).first().map { it.name.lowercase() }.toSet()
+        val missing = names.distinct().filter { it.lowercase() !in have }
+        if (missing.isEmpty()) return
+        dao.insertExercises(missing.map { n ->
+            val lib = ExerciseLibrary.find(n)
+            ExerciseEntity(userId = user, name = lib?.name ?: n, muscleGroup = lib?.muscleGroup ?: "Other", kind = lib?.kind ?: ExerciseKind.STRENGTH)
+        })
+    }
+
+    fun addFromLibrary(entry: LibraryExercise) {
+        viewModelScope.launch { ensureExercises(listOf(entry.name)) }
+    }
 
     /** Weigh-ins from the last 30 days, oldest first, for the trend line. */
     val bodyWeights30d: StateFlow<List<BodyWeightEntity>> =
@@ -151,6 +207,7 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
     fun startWorkout(planDayId: String? = null) {
         val user = userId.value ?: return
         viewModelScope.launch {
+            planDay(planDayId)?.let { day -> ensureExercises(day.exercises.map { it.exerciseName }) }
             if (activeWorkout.value == null) dao.insertWorkout(WorkoutEntity(userId = user, planDayId = planDayId))
         }
     }

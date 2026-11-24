@@ -262,5 +262,5 @@ object ExerciseGuides {
         ),
     )
 
-    fun forName(name: String): ExerciseGuide? = guides[name]
+    fun forName(name: String): ExerciseGuide? = guides[name] ?: ExerciseLibrary.find(name)?.guide
 }

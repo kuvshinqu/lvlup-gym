@@ -30,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.levelup.gym.game.StarterProgram
 import com.levelup.gym.game.UnitsFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -62,7 +61,7 @@ fun HistoryScreen(vm: GymViewModel, onOpen: (Long) -> Unit) {
             }
         }
         items(history, key = { it.id }) { w ->
-            val plan = StarterProgram.day(w.planDayId)
+            val plan = vm.planDay(w.planDayId)
             GameCard(modifier = Modifier.clickable { onOpen(w.id) }) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -96,7 +95,7 @@ fun WorkoutDetailScreen(vm: GymViewModel, workoutId: Long, onBack: () -> Unit) {
     val sets by remember(workoutId) { vm.setsFor(workoutId) }.collectAsStateWithLifecycle(emptyList())
     val units by vm.units.collectAsStateWithLifecycle()
     var confirmDelete by remember { mutableStateOf(false) }
-    val plan = StarterProgram.day(workout?.planDayId)
+    val plan = vm.planDay(workout?.planDayId)
 
     Column {
         TopAppBar(

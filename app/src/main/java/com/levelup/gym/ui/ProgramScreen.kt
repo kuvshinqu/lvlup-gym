@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.levelup.gym.game.StarterProgram
+import com.levelup.gym.game.Programs
 import com.levelup.gym.game.ExerciseGuides
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
@@ -27,7 +27,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 
 @Composable
-fun ProgramScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenExercise: (Long) -> Unit) {
+fun ProgramScreen(
+    vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenExercise: (Long) -> Unit,
+    onChangeProgram: () -> Unit = {}, onOpenQuiz: () -> Unit = {},
+) {
+    val program by vm.activeProgram.collectAsStateWithLifecycle()
+    val quizDone by vm.quizDone.collectAsStateWithLifecycle()
     val next by vm.nextPlanDay.collectAsStateWithLifecycle()
     val exercises by vm.exercises.collectAsStateWithLifecycle()
     val active by vm.activeWorkout.collectAsStateWithLifecycle()
@@ -36,25 +41,37 @@ fun ProgramScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenExercise: (
         item {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("QUEST LINE", style = MaterialTheme.typography.labelSmall, color = GameColors.Muted)
-                Text(StarterProgram.NAME, style = MaterialTheme.typography.headlineMedium)
+                Text(program.name, style = MaterialTheme.typography.headlineMedium)
                 Text(
-                    "Each muscle twice a week, about 10 to 16 hard sets per muscle. Suggested days: " +
-                        StarterProgram.days.joinToString(", ") { "${it.suggestedDay} ${it.name}" } + ". " +
-                        "Finish each set 1 to 2 reps short of failure. When you hit the top of the rep range on every set, add weight next time.",
+                    program.summary + " Finish each set 1 to 3 reps short of failure. When you hit the top of the rep range on every set, add weight next time.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = GameColors.Muted,
                 )
+                OutlinedButton(onClick = onChangeProgram, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) { Text("Change quest line") }
             }
         }
-        items(StarterProgram.days, key = { it.id }) { day ->
+        if (!quizDone) item {
+            GameCard(accent = GameColors.Arcane) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        MedievalIcon(com.levelup.gym.R.drawable.ic_level_crown, 30.dp)
+                        Spacer(Modifier.width(10.dp))
+                        Text("The Hero's Trial", style = MaterialTheme.typography.titleMedium)
+                    }
+                    Text("Answer 5 questions and get the quest line that fits your goal, schedule and gym.", style = MaterialTheme.typography.bodyMedium)
+                    RpgButton("Take the trial", onClick = onOpenQuiz, modifier = Modifier.fillMaxWidth(), color = GameColors.Arcane)
+                }
+            }
+        }
+        items(program.days, key = { it.id }) { day ->
             val isNext = day.id == next.id
             GameCard(accent = if (isNext) GameColors.Gold else null) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("${day.suggestedDay.uppercase()} · ${day.name}", style = MaterialTheme.typography.labelSmall, color = GameColors.Gold)
+                            Text(if (day.suggestedDay.isBlank()) day.name.uppercase() else "${day.suggestedDay.uppercase()} · ${day.name}", style = MaterialTheme.typography.labelSmall, color = GameColors.Gold)
                             Text(day.questName, style = MaterialTheme.typography.titleLarge)
-                            Text(day.focus, style = MaterialTheme.typography.bodySmall, color = GameColors.Muted)
+                            if (day.focus.isNotBlank()) Text(day.focus, style = MaterialTheme.typography.bodySmall, color = GameColors.Muted)
                         }
                         if (isNext) Text("NEXT", style = MaterialTheme.typography.labelSmall, color = GameColors.Xp)
                     }
@@ -89,7 +106,7 @@ fun ProgramScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenExercise: (
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SkillIcon("Cardio", size = 36.dp)
                     Spacer(Modifier.width(12.dp))
-                    Text(StarterProgram.CARDIO_TIP, style = MaterialTheme.typography.bodyMedium)
+                    Text(Programs.CARDIO_TIP, style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }

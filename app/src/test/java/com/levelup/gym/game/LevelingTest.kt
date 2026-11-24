@@ -66,16 +66,9 @@ class CardioAndQuestTest {
     }
 
     @Test fun programRotation() {
-        assertEquals("upper_a", StarterProgram.nextDay(null).id)
-        assertEquals("lower_a", StarterProgram.nextDay("upper_a").id)
-        assertEquals("upper_a", StarterProgram.nextDay("lower_b").id)
-    }
-
-    @Test fun programUsesOnlySeededExercises() {
-        val seeded = com.levelup.gym.data.DEFAULT_EXERCISES.map { it.name }.toSet()
-        StarterProgram.days.flatMap { it.exercises }.forEach {
-            assertTrue("${it.exerciseName} missing from defaults", it.exerciseName in seeded)
-        }
+        assertEquals("upper_a", Programs.default.nextDay(null).id)
+        assertEquals("lower_a", Programs.default.nextDay("upper_a").id)
+        assertEquals("upper_a", Programs.default.nextDay("lower_b").id)
     }
 
     @Test fun unitsRoundTrip() {

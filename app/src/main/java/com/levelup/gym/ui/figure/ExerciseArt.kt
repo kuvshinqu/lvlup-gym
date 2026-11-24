@@ -65,6 +65,22 @@ private fun flatBench(x1: Number, x2: Number, top: Number = 66) = listOf(
     rect(x1, top, x2.toFloat() - x1.toFloat(), 4, Material.LEATHER),
 )
 
+
+/** Same move with dumbbells in place of a barbell. */
+private fun ExerciseArt.dumbbells() = copy(props = props.map { if (it is Prop.Barbell) Prop.Dumbbell(it.anchor) else it })
+
+/** Same move with a barbell in place of dumbbells. */
+private fun ExerciseArt.barbell(r: Float = 9f) = copy(props = props.map { if (it is Prop.Dumbbell) Prop.Barbell(it.anchor, r) else it })
+
+/** Smith machine: the bar rides a fixed vertical rail at [x]. */
+private fun ExerciseArt.smith(x: Float) = copy(
+    props = listOf(line(x, -4, x, 92, 1.8, Material.STEEL), line(x - 8, -4, x + 8, -4, 3), line(x - 8, 92, x + 8, 92, 3)) +
+        props.map { if (it is Prop.Dumbbell) Prop.Barbell(it.anchor, 6.5f) else it },
+)
+
+private fun ExerciseArt.plus(vararg extra: Prop) = copy(props = props + extra)
+private fun ExerciseArt.without(drop: (Prop) -> Boolean) = copy(props = props.filterNot(drop))
+
 private val standing = Pose(hip = v(50, 51), torso = 0f, hand = v(52, 52), ankle = v(51, 91))
 
 object ExerciseArts {
@@ -297,6 +313,250 @@ object ExerciseArts {
         frontView = true, hold = true,
     )
 
-    fun forName(name: String): ExerciseArt? = arts[name]
-    val names: Set<String> get() = arts.keys
+    private fun base(name: String) = arts.getValue(name)
+
+    private val seat = listOf(rect(32, 68, 24, 4, Material.LEATHER), line(44, 72, 44, 92, 3))
+
+    /** Art for the library exercises: new poses plus equipment variants of the starter poses. */
+    private val more: Map<String, ExerciseArt> = mapOf(
+        // Chest
+        "Dumbbell Bench Press" to base("Bench Press").dumbbells(),
+        "Smith Machine Bench Press" to base("Bench Press").copy(
+            start = base("Bench Press").start.copy(hand = v(39, 33)),
+            finish = base("Bench Press").finish.copy(hand = v(40, 55)),
+        ).smith(39.5f),
+        "Incline Barbell Bench Press" to base("Incline Dumbbell Press").barbell(6.5f),
+        "Smith Machine Incline Press" to base("Incline Dumbbell Press").copy(
+            finish = base("Incline Dumbbell Press").finish.copy(hand = v(44, 19)),
+        ).smith(44f),
+        "Machine Chest Press" to ExerciseArt(
+            start = Pose(hip = v(42, 66), torso = -4f, hand = v(54, 44), ankle = v(66, 91), elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(42, 66), torso = -4f, hand = v(68, 42), ankle = v(66, 91), elbowBend = 1, kneeBend = -1),
+            primary = setOf(CHEST), secondary = setOf(TRICEPS, SHOULDERS),
+            props = listOf(rect(30, 68, 24, 4, Material.LEATHER), line(42, 72, 42, 92, 3),
+                Prop.Poly(listOf(v(29, 68), v(28, 34), v(33, 34), v(34, 68)), Material.LEATHER),
+                Prop.Stack(8f, 30f, via = v(30, 22)), Prop.Lever(Anchor.HAND, pivot = v(36, 20))),
+        ),
+        "Dumbbell Fly" to ExerciseArt(
+            // Arms open wide with a soft bend; from the side the hands travel from over the chest down to bench height.
+            start = Pose(hip = v(60, 61), torso = -90f, hand = v(36, 33), ankle = v(77, 91), elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(60, 61), torso = -90f, hand = v(40, 64), ankle = v(77, 91), elbowBend = 1, kneeBend = -1),
+            primary = setOf(CHEST), secondary = setOf(SHOULDERS),
+            props = flatBench(16, 66) + Prop.Dumbbell(),
+        ),
+        "Cable Fly" to ExerciseArt(
+            start = Pose(hip = v(46, 52), torso = 12f, hand = v(54, 36), ankle = v(56, 91), ankleFar = v(38, 91), elbowBend = 1),
+            finish = Pose(hip = v(46, 52), torso = 12f, hand = v(76, 44), ankle = v(56, 91), ankleFar = v(38, 91), elbowBend = 1),
+            primary = setOf(CHEST), secondary = setOf(SHOULDERS),
+            props = listOf(line(22, -4, 22, 92, 3), Prop.Disc(v(24, 26), 2.4f, Material.STEEL), Prop.Cable(Anchor.HAND, v(24, 26))),
+        ),
+        "Pec Deck" to ExerciseArt(
+            start = Pose(hip = v(42, 66), torso = -4f, hand = v(46, 40), ankle = v(66, 91), elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(42, 66), torso = -4f, hand = v(64, 42), ankle = v(66, 91), elbowBend = 1, kneeBend = -1),
+            primary = setOf(CHEST), secondary = setOf(SHOULDERS),
+            props = listOf(rect(30, 68, 24, 4, Material.LEATHER), line(42, 72, 42, 92, 3),
+                Prop.Poly(listOf(v(29, 68), v(28, 34), v(33, 34), v(34, 68)), Material.LEATHER),
+                Prop.Stack(8f, 30f, via = v(30, 20)), Prop.Lever(Anchor.HAND, pivot = v(38, 22))),
+        ),
+        "Dips" to ExerciseArt(
+            start = Pose(hip = v(50, 56), torso = 10f, hand = v(56, 56), ankle = v(38, 90), kneeBend = -1, foot = 30f, elbowBend = -1),
+            finish = Pose(hip = v(48, 72), torso = 22f, hand = v(56, 56), ankle = v(34, 104), kneeBend = -1, foot = 30f, elbowBend = -1),
+            primary = setOf(CHEST, TRICEPS), secondary = setOf(SHOULDERS),
+            props = listOf(line(44, 57.5, 76, 57.5, 2.2, Material.STEEL), line(72, 57.5, 72, 108, 3)),
+            trail = Anchor.SHOULDER, floor = false,
+        ),
+        // Back
+        "Dumbbell Row" to base("Barbell Row").dumbbells().plus(rect(70, 62, 26, 4, Material.LEATHER), line(92, 66, 92, 92, 2.5)),
+        "Chest-Supported Dumbbell Row" to base("Barbell Row").dumbbells().plus(
+            Prop.Poly(listOf(v(50, 62), v(70, 42), v(73, 45), v(53, 66)), Material.LEATHER), line(58, 62, 58, 92, 2.5),
+        ),
+        "Smith Machine Row" to base("Barbell Row").copy(
+            finish = base("Barbell Row").finish.copy(hand = v(64, 56)),
+        ).smith(65f),
+        "Chin-up" to base("Pull-up"),
+        "Dumbbell Shrug" to ExerciseArt(
+            start = Pose(hip = v(50, 51), torso = -2f, hand = v(53, 53), ankle = v(52, 91)),
+            finish = Pose(hip = v(50, 50), torso = -2f, hand = v(53, 50), ankle = v(52, 91), head = -4f),
+            primary = setOf(BACK), secondary = setOf(FOREARMS),
+            props = listOf(Prop.Dumbbell()),
+        ),
+        "Straight-Arm Pulldown" to ExerciseArt(
+            start = Pose(hip = v(46, 52), torso = 25f, hand = v(80, 13), ankle = v(52, 91), elbowBend = 1),
+            finish = Pose(hip = v(46, 52), torso = 25f, hand = v(63, 54), ankle = v(52, 91), elbowBend = 1),
+            primary = setOf(BACK), secondary = setOf(TRICEPS, CORE),
+            props = listOf(Prop.Stack(96f, 12f, via = v(90, -2)), line(92, -4, 92, 92, 3), Prop.Disc(v(90, -2), 2.5f, Material.STEEL), Prop.Cable(Anchor.HAND, v(90, -2))),
+        ),
+        "Barbell Shrug" to ExerciseArt(
+            start = Pose(hip = v(50, 51), torso = -2f, hand = v(53, 53), ankle = v(52, 91)),
+            finish = Pose(hip = v(50, 50), torso = -2f, hand = v(53, 50), ankle = v(52, 91), head = -4f),
+            primary = setOf(BACK), secondary = setOf(FOREARMS),
+            props = listOf(Prop.Barbell()),
+        ),
+        // Legs
+        "Goblet Squat" to ExerciseArt(
+            start = Pose(hip = v(48, 51), torso = 6f, hand = v(58, 34), ankle = v(52, 91), elbowBend = 1),
+            finish = Pose(hip = v(34, 71), torso = 30f, hand = v(57, 58), ankle = v(52, 91), elbowBend = 1),
+            primary = setOf(QUADS, GLUTES), secondary = setOf(CORE),
+            props = listOf(Prop.Dumbbell()),
+            trail = Anchor.HIP,
+        ),
+        "Front Squat" to ExerciseArt(
+            start = Pose(hip = v(48, 51), torso = 4f, hand = v(58, 26), ankle = v(52, 91), elbowBend = 1),
+            finish = Pose(hip = v(34, 72), torso = 24f, hand = v(62, 50), ankle = v(52, 91), elbowBend = 1),
+            primary = setOf(QUADS, GLUTES), secondary = setOf(CORE, BACK),
+            props = listOf(Prop.Barbell(Anchor.SHOULDER)),
+            trail = Anchor.HIP,
+        ),
+        "Smith Machine Squat" to base("Squat").smith(46f),
+        "Hack Squat" to base("Squat").copy(
+            start = base("Squat").start.copy(hip = v(46, 52), torso = -12f),
+            finish = base("Squat").finish.copy(hip = v(32, 72), torso = 22f),
+        ).without { it is Prop.Barbell }.plus(
+            line(18, 92, 56, 10, 3), Prop.Roller(Anchor.UPPER_BACK, r = 2.8f),
+        ),
+        "Walking Lunge" to ExerciseArt(
+            start = Pose(hip = v(46, 52), torso = 4f, hand = v(48, 80), ankle = v(60, 91), ankleFar = v(34, 91), footFar = 70f, kneeBendFar = -1),
+            finish = Pose(hip = v(44, 66), torso = 6f, hand = v(47, 92), ankle = v(60, 91), ankleFar = v(24, 90), footFar = 60f, kneeBendFar = -1),
+            primary = setOf(QUADS, GLUTES), secondary = setOf(HAMSTRINGS),
+            props = listOf(Prop.Dumbbell()),
+            trail = Anchor.HIP,
+        ),
+        "Smith Machine Split Squat" to ExerciseArt(
+            start = Pose(hip = v(46, 52), torso = 2f, hand = v(46, 26), ankle = v(60, 91), ankleFar = v(30, 91), footFar = 70f, kneeBendFar = -1, elbowBend = 1),
+            finish = Pose(hip = v(44, 67), torso = 4f, hand = v(44, 41), ankle = v(60, 91), ankleFar = v(22, 90), footFar = 60f, kneeBendFar = -1, elbowBend = 1),
+            primary = setOf(QUADS, GLUTES), secondary = setOf(HAMSTRINGS),
+            props = listOf(Prop.Barbell(Anchor.UPPER_BACK, 6.5f)),
+            trail = Anchor.HIP,
+        ).smith(44f),
+        "Dumbbell Romanian Deadlift" to base("Romanian Deadlift").dumbbells(),
+        "Hip Thrust" to ExerciseArt(
+            // Upper back on a bench, bar over the hips: drive the hips up until the body is flat from shoulders to knees.
+            start = Pose(hip = v(38, 82), torso = -48f, hand = v(38, 78), ankle = v(66, 91), kneeBend = -1, elbowBend = 1),
+            finish = Pose(hip = v(45, 63), torso = -90f, hand = v(44, 60), ankle = v(66, 91), kneeBend = -1, elbowBend = 1),
+            primary = setOf(GLUTES), secondary = setOf(HAMSTRINGS, QUADS),
+            props = flatBench(-4, 22, 66) + Prop.Barbell(Anchor.HIP, 6.5f),
+            trail = Anchor.HIP,
+        ),
+        "Glute Bridge" to ExerciseArt(
+            start = Pose(hip = v(42, 85), torso = -88f, hand = v(32, 90), ankle = v(64, 91), kneeBend = -1, elbowBend = 1),
+            finish = Pose(hip = v(40, 76), torso = -105f, hand = v(32, 90), ankle = v(64, 91), kneeBend = -1, elbowBend = 1),
+            primary = setOf(GLUTES), secondary = setOf(HAMSTRINGS, CORE),
+            trail = Anchor.HIP,
+        ),
+        "Seated Leg Curl" to ExerciseArt(
+            start = Pose(hip = v(40, 64), torso = -6f, hand = v(46, 68), ankle = v(80, 62), foot = 170f, kneeBend = -1),
+            finish = Pose(hip = v(40, 64), torso = -6f, hand = v(46, 68), ankle = v(52, 80), foot = 120f, kneeBend = -1),
+            primary = setOf(HAMSTRINGS), secondary = setOf(CALVES),
+            props = listOf(
+                rect(30, 66, 32, 5, Material.LEATHER), line(46, 71, 46, 92, 3),
+                Prop.Poly(listOf(v(29, 66), v(25, 36), v(30, 35), v(34, 66)), Material.LEATHER),
+                rect(48, 56, 16, 4, Material.LEATHER),
+                Prop.Stack(12f, 30f, toLever = true), Prop.Lever(Anchor.ANKLE, v(0f, -3.5f)),
+                Prop.Roller(Anchor.ANKLE, v(0f, -3.5f), 3.4f),
+            ),
+            trail = Anchor.ANKLE,
+        ),
+        "Seated Calf Raise" to ExerciseArt(
+            start = Pose(hip = v(38, 66), torso = -2f, hand = v(56, 60), ankle = v(60, 86), foot = 110f, kneeBend = -1),
+            finish = Pose(hip = v(38, 64), torso = -2f, hand = v(56, 58), ankle = v(60.5, 83), foot = 60f, kneeBend = -1),
+            primary = setOf(CALVES),
+            props = listOf(rect(26, 68, 22, 4, Material.LEATHER), line(36, 72, 36, 92, 3), rect(56, 86, 16, 6, Material.WOOD), rect(50, 56, 16, 4, Material.LEATHER), line(66, 58, 74, 92, 2.5)),
+            trail = Anchor.ANKLE,
+        ),
+        "Smith Machine Calf Raise" to base("Calf Raise").copy(
+            start = base("Calf Raise").start.copy(hand = v(50, 24), elbowBend = 1),
+            finish = base("Calf Raise").finish.copy(hand = v(53, 17), elbowBend = 1),
+        ).without { it is Prop.Dumbbell }.plus(Prop.Barbell(Anchor.UPPER_BACK, 6.5f)).smith(48f),
+        // Shoulders
+        "Face Pull" to ExerciseArt(
+            start = Pose(hip = v(46, 52), torso = -6f, hand = v(70, 30), ankle = v(52, 91), ankleFar = v(38, 91), elbowBend = 1),
+            finish = Pose(hip = v(46, 52), torso = -6f, hand = v(52, 22), ankle = v(52, 91), ankleFar = v(38, 91), elbowBend = -1),
+            primary = setOf(SHOULDERS), secondary = setOf(BACK),
+            props = listOf(Prop.Stack(96f, 12f, via = v(88, 24)), line(90, -4, 90, 92, 3), Prop.Disc(v(88, 24), 2.4f, Material.STEEL), Prop.Cable(Anchor.HAND, v(88, 24))),
+        ),
+        "Arnold Press" to base("Dumbbell Shoulder Press"),
+        "Smith Machine Shoulder Press" to base("Dumbbell Shoulder Press").copy(
+            start = base("Dumbbell Shoulder Press").start.copy(hand = v(50, 36)),
+            finish = base("Dumbbell Shoulder Press").finish.copy(hand = v(50, 10)),
+        ).smith(50f),
+        "Machine Shoulder Press" to base("Dumbbell Shoulder Press").without { it is Prop.Dumbbell }.plus(
+            Prop.Stack(14f, 20f, via = v(32, 4)), Prop.Lever(Anchor.HAND, pivot = v(30, 8)),
+        ),
+        "Cable Lateral Raise" to base("Lateral Raise").without { it is Prop.Dumbbell }.plus(
+            Prop.Cable(Anchor.HAND, v(40, 90)), Prop.Cable(Anchor.HAND_FAR, v(60, 90)),
+        ),
+        "Rear Delt Fly" to ExerciseArt(
+            start = Pose(hip = v(44, 56), torso = 55f, hand = v(68, 68), ankle = v(51, 91), elbowBend = 1),
+            finish = Pose(hip = v(44, 56), torso = 55f, hand = v(64, 47), ankle = v(51, 91), elbowBend = -1),
+            primary = setOf(SHOULDERS), secondary = setOf(BACK),
+            props = listOf(Prop.Dumbbell()),
+        ),
+        // Arms
+        "Barbell Curl" to base("Bicep Curl").barbell(),
+        "Cable Curl" to base("Bicep Curl").without { it is Prop.Dumbbell }.plus(
+            Prop.Cable(Anchor.HAND, v(66, 88)), Prop.Disc(v(66, 88), 2.4f, Material.STEEL), line(70, 60, 70, 92, 3),
+        ),
+        "Incline Dumbbell Curl" to ExerciseArt(
+            // Arms hang behind the body, so the biceps start long.
+            start = Pose(hip = v(58, 64), torso = -55f, hand = v(34, 76), ankle = v(76, 91), elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(58, 64), torso = -55f, hand = v(42, 52), ankle = v(76, 91), elbowBend = -1, kneeBend = -1),
+            primary = setOf(BICEPS), secondary = setOf(FOREARMS),
+            props = listOf(
+                line(60, 69, 60, 92, 2.5), line(40, 69, 32, 92, 2.5),
+                rect(52, 67, 14, 4, Material.LEATHER),
+                Prop.Poly(listOf(v(56, 68), v(30, 50), v(27, 54), v(53, 72)), Material.LEATHER),
+                Prop.Dumbbell(),
+            ),
+        ),
+        "Preacher Curl" to ExerciseArt(
+            start = Pose(hip = v(44, 66), torso = 8f, hand = v(71, 58), ankle = v(64, 91), elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(44, 66), torso = 8f, hand = v(58, 33), ankle = v(64, 91), elbowBend = -1, kneeBend = -1),
+            primary = setOf(BICEPS), secondary = setOf(FOREARMS),
+            props = seat + listOf(Prop.Poly(listOf(v(52, 43), v(64, 56), v(67, 53), v(55, 40)), Material.LEATHER), line(60, 54, 60, 92, 2.5), Prop.Barbell(r = 6.5f)),
+        ),
+        "Skull Crusher" to ExerciseArt(
+            start = Pose(hip = v(60, 61), torso = -90f, hand = v(34, 33), ankle = v(77, 91), elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(60, 61), torso = -90f, hand = v(22, 46), ankle = v(77, 91), elbowBend = -1, kneeBend = -1),
+            primary = setOf(TRICEPS),
+            props = flatBench(16, 66) + Prop.Barbell(r = 6.5f),
+        ),
+        "Close-Grip Bench Press" to base("Bench Press"),
+        "Cable Overhead Tricep Extension" to base("Overhead Tricep Extension").without { it is Prop.Dumbbell }.plus(
+            Prop.Cable(Anchor.HAND, v(20, 70)), Prop.Disc(v(20, 70), 2.4f, Material.STEEL), line(16, 40, 16, 92, 3),
+        ),
+        // Core
+        "Cable Crunch" to ExerciseArt(
+            start = Pose(hip = v(52, 66), torso = 4f, hand = v(58, 32), ankle = v(32, 88), foot = 20f, elbowBend = -1),
+            finish = Pose(hip = v(52, 66), torso = 62f, hand = v(80, 46), ankle = v(32, 88), foot = 20f, elbowBend = -1),
+            primary = setOf(CORE),
+            props = listOf(line(40, -4, 40, 92, 3), Prop.Disc(v(42, 2), 2.4f, Material.STEEL), Prop.Cable(Anchor.HAND, v(42, 2))),
+        ),
+        "Ab Wheel Rollout" to ExerciseArt(
+            start = Pose(hip = v(46, 67.4), torso = 58f, hand = v(70, 84), ankle = v(21, 89), foot = 20f, elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(58, 75.5), torso = 84f, hand = v(100, 83), ankle = v(21, 89), foot = 20f, elbowBend = 1, kneeBend = -1),
+            primary = setOf(CORE), secondary = setOf(SHOULDERS, BACK),
+            props = listOf(Prop.Roller(Anchor.HAND, v(0f, 0f), 4f)),
+            trail = Anchor.HAND,
+        ),
+        // Cardio
+        "Stair Climber" to base("Incline Walk"),
+        "Walking" to base("Incline Walk").copy(props = emptyList(), floor = true,
+            start = base("Incline Walk").start.copy(ankleFar = v(38, 91)),
+            finish = base("Incline Walk").finish.copy(ankle = v(38, 91))),
+        "Jump Rope" to base("Calf Raise").without { it is Prop.Dumbbell || it is Prop.Poly }.copy(
+            start = base("Calf Raise").start.copy(hand = v(60, 60), elbowBend = 1),
+            finish = base("Calf Raise").finish.copy(hand = v(63, 53), elbowBend = 1),
+            primary = setOf(CALVES, QUADS), secondary = setOf(SHOULDERS),
+        ).plus(Prop.Cable(Anchor.HAND, v(44, 93))),
+        "Swimming" to ExerciseArt(
+            start = Pose(hip = v(40, 60), torso = 92f, hand = v(90, 58), handFar = v(42, 66), ankle = v(2, 58), ankleFar = v(4, 64), foot = 0f, elbowBend = 1),
+            finish = Pose(hip = v(40, 60), torso = 92f, hand = v(42, 66), handFar = v(90, 58), ankle = v(4, 64), ankleFar = v(2, 58), foot = 0f, elbowBend = 1),
+            primary = setOf(BACK, SHOULDERS), secondary = setOf(CORE, QUADS),
+            props = listOf(line(-6, 52, 106, 52, 1, Material.STEEL)),
+            floor = false,
+        ),
+    )
+
+    fun forName(name: String): ExerciseArt? = arts[name] ?: more[name]
+    val names: Set<String> get() = arts.keys + more.keys
 }

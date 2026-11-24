@@ -41,6 +41,17 @@ class AppFlowTest {
     }
 
     @Test fun fullQuestFlow() {
+        // First launch opens the Hero's Trial
+        waitFor("Trial 1 of 5")
+        shot("0a_trial")
+        for (answer in listOf("Build muscle", "4 days", "A full gym", "6 months to 2 years")) {
+            compose.onNodeWithText(answer).performClick()
+            compose.waitForIdle()
+        }
+        compose.onNodeWithText("About 60 min").performClick()
+        waitFor("Accept the quest")
+        shot("0b_trial_result")
+        compose.onNodeWithText("Accept the quest").performClick()
         waitFor("Begin Upper A")
         shot("1_hero")
 
@@ -78,9 +89,35 @@ class AppFlowTest {
         waitFor("Upper / Lower")
         shot("6_program")
 
+        compose.onNodeWithText("Change quest line").performClick()
+        waitFor("Choose a program")
+        shot("6b_programs")
+        compose.onNodeWithText("Forge your own").performClick()
+        waitFor("Save and follow")
+        // Robolectric never idles while a dialog is open, so step the clock by hand.
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithText("Add exercise").performClick()
+        compose.mainClock.advanceTimeBy(500)
+        shot("6c_pick_exercise")
+        compose.onNodeWithText("Arnold Press").performClick()
+        compose.mainClock.advanceTimeBy(500)
+        compose.mainClock.autoAdvance = true
+        waitFor("3 × 8-12")
+        shot("6d_builder")
+        compose.onNodeWithContentDescription("Back").performClick()
+        waitFor("Choose a program")
+        compose.onNodeWithContentDescription("Back").performClick()
+
         compose.onNodeWithText("Armory").performClick()
-        waitFor("Add exercise")
+        waitFor("Add from the library")
         shot("7_exercises")
+        compose.onNodeWithText("Add from the library").performClick()
+        waitFor("Exercise library")
+        compose.onNodeWithText("Dumbbell").performClick()
+        compose.waitForIdle()
+        shot("7b_library")
+        compose.onNodeWithContentDescription("Back").performClick()
+        waitFor("Add from the library")
 
         // How-to screen
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("Pull-up"))

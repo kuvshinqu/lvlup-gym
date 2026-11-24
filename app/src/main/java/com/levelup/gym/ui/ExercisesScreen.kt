@@ -39,7 +39,7 @@ import androidx.compose.foundation.layout.width
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ExercisesScreen(vm: GymViewModel, onOpenExercise: (Long) -> Unit) {
+fun ExercisesScreen(vm: GymViewModel, onOpenExercise: (Long) -> Unit, onOpenLibrary: () -> Unit = {}) {
     val exercises by vm.exercises.collectAsStateWithLifecycle()
     var name by rememberSaveable { mutableStateOf("") }
     var group by rememberSaveable { mutableStateOf("Chest") }
@@ -52,9 +52,12 @@ fun ExercisesScreen(vm: GymViewModel, onOpenExercise: (Long) -> Unit) {
             }
         }
         item {
+            RpgButton("Add from the library", onClick = onOpenLibrary, modifier = Modifier.fillMaxWidth())
+        }
+        item {
             GameCard(accent = GameColors.Gold) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Add exercise", style = MaterialTheme.typography.titleMedium)
+                    Text("Make your own exercise", style = MaterialTheme.typography.titleMedium)
                     OutlinedTextField(
                         name, { name = it }, label = { Text("Name") }, singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
