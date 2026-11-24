@@ -24,6 +24,13 @@ import com.levelup.gym.game.Program
 import com.levelup.gym.game.ProgramStore
 import com.levelup.gym.game.ExerciseLibrary
 import com.levelup.gym.game.LibraryExercise
+import com.levelup.gym.game.ChestTier
+import com.levelup.gym.game.Gear
+import com.levelup.gym.game.Loot
+import com.levelup.gym.game.Slot
+import com.levelup.gym.data.ChestEntity
+import com.levelup.gym.data.EquippedEntity
+import com.levelup.gym.ui.figure.HeroLook
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
@@ -47,6 +54,18 @@ sealed interface GameEvent {
     data class XpGained(val xp: Int, val label: String, val personalRecord: Boolean = false) : GameEvent
     data class LevelUp(val level: Int, val title: String) : GameEvent
     data class Message(val text: String) : GameEvent
+    data class ChestFound(val tier: ChestTier, val reason: String) : GameEvent
+}
+
+/** The hero's treasure: chests, items found, gold and what is worn. */
+data class Treasury(
+    val unopened: List<ChestEntity> = emptyList(),
+    val opened: List<ChestEntity> = emptyList(),
+    val owned: List<Gear> = emptyList(),
+    val equipped: Map<Slot, Gear> = emptyMap(),
+    val gold: Int = 0,
+) {
+    val gearScore: Int get() = Loot.gearScore(equipped.values)
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -165,6 +184,61 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { ensureExercises(listOf(entry.name)) }
     }
 
+    // ---------------------------------------------------------------- Loot
+
+    val treasury: StateFlow<Treasury> =
+        uid.flatMapLatest { user ->
+            kotlinx.coroutines.flow.combine(dao.chests(user), dao.equipped(user)) { chests, worn -> buildTreasury(chests, worn) }
+        }.state(Treasury())
+
+    /** The hero's colours from the gear they wear. */
+    val heroLook: StateFlow<HeroLook> = treasury.map { GearLooks.lookFor(it.equipped) }.state(HeroLook.Default)
+
+    private fun buildTreasury(chests: List<ChestEntity>, worn: List<EquippedEntity>): Treasury {
+        val opened = chests.filter { it.openedAt != null }
+        val owned = opened.filter { !it.duplicate }.mapNotNull { Loot.gear(it.itemKey) }.distinctBy { it.key }
+            .sortedWith(compareBy<Gear>({ it.slot.ordinal }, { -it.rarity.ordinal }))
+        val earned = opened.filter { it.duplicate }.sumOf { Loot.gear(it.itemKey)?.rarity?.salvageGold ?: 0 }
+        val gold = earned - chests.sumOf { it.cost }
+        val equipped = worn.mapNotNull { e -> Loot.gear(e.itemKey)?.let { g -> g.slot to g } }.toMap()
+        return Treasury(chests.filter { it.openedAt == null }, opened, owned, equipped, gold)
+    }
+
+    private suspend fun dropChest(tier: ChestTier, source: String, reason: String) {
+        val user = userId.value ?: return
+        dao.insertChest(ChestEntity(userId = user, tier = tier.name, source = source))
+        _events.emit(GameEvent.ChestFound(tier, reason))
+    }
+
+    /** Opens a chest and returns the item; a duplicate is melted into gold. New items go on if the slot is empty or weaker. */
+    suspend fun openChest(chestId: Long): Pair<Gear, Boolean>? {
+        val user = userId.value ?: return null
+        val chest = dao.chest(chestId) ?: return null
+        if (chest.openedAt != null) return Loot.gear(chest.itemKey)?.let { it to chest.duplicate }
+        val gear = Loot.roll(ChestTier.valueOf(chest.tier))
+        val ownedKeys = dao.chests(user).first().filter { it.openedAt != null && !it.duplicate }.mapNotNull { it.itemKey }.toSet()
+        val duplicate = gear.key in ownedKeys
+        dao.openChest(chestId, System.currentTimeMillis(), gear.key, duplicate)
+        if (!duplicate) {
+            val current = dao.equipped(user).first().firstOrNull { it.slot == gear.slot.name }?.let { Loot.gear(it.itemKey) }
+            if (current == null || current.rarity < gear.rarity) dao.equip(EquippedEntity(user, gear.slot.name, gear.key))
+        }
+        return gear to duplicate
+    }
+
+    fun equip(gear: Gear) {
+        val user = userId.value ?: return
+        viewModelScope.launch { dao.equip(EquippedEntity(user, gear.slot.name, gear.key)) }
+    }
+
+    fun buyChest() {
+        val user = userId.value ?: return
+        viewModelScope.launch {
+            if (treasury.value.gold < Loot.CHEST_PRICE) return@launch
+            dao.insertChest(ChestEntity(userId = user, tier = ChestTier.WOODEN.name, source = "forge", cost = Loot.CHEST_PRICE))
+        }
+    }
+
     /** Weigh-ins from the last 30 days, oldest first, for the trend line. */
     val bodyWeights30d: StateFlow<List<BodyWeightEntity>> =
         uid.flatMapLatest { dao.bodyWeightsSince(it, System.currentTimeMillis() - 30L * 24 * 3600 * 1000) }.state(emptyList())
@@ -215,19 +289,41 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun lastSet(exerciseId: Long): SetEntity? =
         userId.value?.let { dao.lastSetForExercise(it, exerciseId) }
 
+    /** Best estimated 1RM and best bodyweight reps on an exercise, for the effort preview. */
+    suspend fun bestFor(exerciseId: Long): Pair<Double?, Int?> = dao.bestE1rm(exerciseId) to dao.bestBodyweightReps(exerciseId)
+
+    private suspend fun gearBonus(muscleGroup: String): Double {
+        val user = userId.value ?: return 0.0
+        return Loot.bonusFor(muscleGroup, dao.equipped(user).first().mapNotNull { Loot.gear(it.itemKey) })
+    }
+
     fun logSet(exercise: ExerciseEntity, reps: Int, weightKg: Double) {
         val workout = activeWorkout.value ?: return
         viewModelScope.launch {
             val levelBefore = currentLevel()
-            val pr = Leveling.isPersonalRecord(weightKg, dao.bestWeight(exercise.id))
-            val xp = Leveling.xpForSet(reps, weightKg, pr)
+            val score = Leveling.scoreSet(
+                reps, weightKg,
+                bestE1rm = dao.bestE1rm(exercise.id),
+                bestReps = dao.bestBodyweightReps(exercise.id),
+                setsBeforeInWorkout = dao.setCountForWorkout(workout.id),
+                gearBonus = gearBonus(exercise.muscleGroup),
+            )
             dao.insertSet(
                 SetEntity(
                     workoutId = workout.id, exerciseId = exercise.id,
-                    reps = reps, weightKg = weightKg, xp = xp, isPersonalRecord = pr,
+                    reps = reps, weightKg = weightKg, xp = score.xp, isPersonalRecord = score.personalRecord,
                 )
             )
-            _events.emit(GameEvent.XpGained(xp, exercise.name, pr))
+            _events.emit(
+                GameEvent.XpGained(
+                    score.xp,
+                    exercise.name + when {
+                        score.warmup -> " · warm-up"
+                        else -> " · ${(score.effort.coerceAtMost(1.0) * 100).toInt()}% effort"
+                    },
+                    score.personalRecord,
+                )
+            )
             checkLevelUp(levelBefore)
         }
     }
@@ -236,7 +332,7 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
         val workout = activeWorkout.value ?: return
         viewModelScope.launch {
             val levelBefore = currentLevel()
-            val xp = Leveling.xpForCardio(durationSec, distanceM)
+            val xp = Leveling.xpForCardio(durationSec, distanceM, gearBonus(exercise.muscleGroup))
             dao.insertSet(
                 SetEntity(
                     workoutId = workout.id, exerciseId = exercise.id,
@@ -271,6 +367,10 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
                     if (bonus > Leveling.FINISH_WORKOUT_XP) "Weekly quest complete!" else "Quest complete",
                 )
             )
+            val prs = dao.prCountForWorkout(workout.id)
+            if (prs > 0) dropChest(ChestTier.IRON, "workout", "New best in this quest")
+            else dropChest(ChestTier.WOODEN, "workout", "Quest complete")
+            if (bonus > Leveling.FINISH_WORKOUT_XP) dropChest(ChestTier.GOLDEN, "weekly", "Weekly quest complete")
             checkLevelUp(levelBefore)
         }
     }
@@ -310,6 +410,9 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun checkLevelUp(levelBefore: Int) {
         val now = currentLevel()
-        if (now > levelBefore) _events.emit(GameEvent.LevelUp(now, Leveling.title(now)))
+        if (now > levelBefore) {
+            _events.emit(GameEvent.LevelUp(now, Leveling.title(now)))
+            dropChest(ChestTier.IRON, "level", "Reached level $now")
+        }
     }
 }

@@ -40,6 +40,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -65,19 +66,20 @@ fun XpBar(
     Canvas(modifier.fillMaxWidth().height(height + 4.dp)) {
         val r = size.height / 2
         val inset = 2.dp.toPx()
-        // frame
-        drawRoundRect(GameColors.Gold.copy(alpha = 0.55f), cornerRadius = CornerRadius(r, r), style = Stroke(1.dp.toPx()))
+        // forged frame and a dark glass tube
+        drawRoundRect(Brush.verticalGradient(listOf(Materials.SteelLight, Materials.SteelMid, Materials.SteelDark)), cornerRadius = CornerRadius(r, r))
         val inner = Size(size.width - inset * 2, size.height - inset * 2)
         val ir = inner.height / 2
-        drawRoundRect(Color(0xFF0A0C12), Offset(inset, inset), inner, CornerRadius(ir, ir))
+        drawRoundRect(Brush.verticalGradient(listOf(Color(0xFF020305), Color(0xFF141820))), Offset(inset, inset), inner, CornerRadius(ir, ir))
         val w = inner.width * animated
         if (w > 0.5f) {
+            // liquid fill, lit from above
             drawRoundRect(
-                Brush.horizontalGradient(listOf(color.copy(alpha = 0.55f), color), startX = inset, endX = inset + w),
+                Brush.verticalGradient(listOf(lerp(color, Color.White, 0.35f), color, lerp(color, Color.Black, 0.45f)), inset, inset + inner.height),
                 Offset(inset, inset), Size(w, inner.height), CornerRadius(ir, ir),
             )
-            // sheen
-            drawRoundRect(Color.White.copy(alpha = 0.18f), Offset(inset, inset), Size(w, inner.height * 0.4f), CornerRadius(ir, ir))
+            // glass reflection
+            drawRoundRect(Color.White.copy(alpha = 0.28f), Offset(inset + ir * 0.5f, inset + inner.height * 0.12f), Size((w - ir).coerceAtLeast(0f), inner.height * 0.22f), CornerRadius(ir, ir))
         }
         // segment ticks
         for (i in 1 until 10) {
@@ -109,9 +111,11 @@ fun LevelBadge(level: Int, size: Dp = 64.dp, color: Color = GameColors.Gold) {
                 lineTo(w * 0.08f, h * 0.16f)
                 close()
             }
-            drawPath(shield, Brush.verticalGradient(listOf(Color(0xFF2A2340), Color(0xFF12141F))))
-            drawPath(shield, color.copy(alpha = 0.25f), style = Stroke(w * 0.12f))
-            drawPath(shield, color, style = Stroke(w * 0.035f))
+            drawPath(shield, Color.Black.copy(alpha = 0.5f), style = Stroke(w * 0.14f))
+            drawPath(shield, Brush.linearGradient(listOf(Color(0xFF5A6070), Color(0xFF2A2E37), Color(0xFF14161B)), Offset(0f, 0f), Offset(w, h)))
+            drawPath(shield, Materials.grainBrush, alpha = 0.25f)
+            drawPath(shield, Brush.verticalGradient(listOf(Materials.GoldLight, Materials.GoldMid, Materials.GoldDark)), style = Stroke(w * 0.07f))
+            drawPath(shield, Color.Black.copy(alpha = 0.5f), style = Stroke(w * 0.012f))
             // laurel ticks
             for (i in 0..3) {
                 val y = h * (0.38f + i * 0.1f)
@@ -143,31 +147,30 @@ fun GameCard(
     ornate: Boolean = accent != null,
     content: @Composable () -> Unit,
 ) {
-    val rim = accent ?: GameColors.Gold.copy(alpha = 0.35f)
-    val shape = RoundedCornerShape(14.dp)
+    val rim = accent ?: Materials.SteelMid
+    val shape = RoundedCornerShape(12.dp)
     Box(
         modifier
             .fillMaxWidth()
+            .drawBehind {
+                // drop shadow onto the stone
+                drawRoundRect(Color.Black.copy(alpha = 0.5f), Offset(0f, 3.dp.toPx()), size, CornerRadius(12.dp.toPx()))
+            }
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFF1C2233), Color(0xFF141927))))
-            .border(1.dp, rim.copy(alpha = if (accent != null) 0.6f else 0.18f), shape)
             .drawWithContent {
+                val r = 12.dp.toPx()
+                // worn dark steel plate with grain
+                drawRect(Brush.verticalGradient(listOf(Color(0xFF2A2E37), Color(0xFF1C1F26), Color(0xFF15171C))))
+                drawRect(Materials.grainBrush, alpha = 0.16f)
+                // soft top light
+                drawRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.06f), Color.Transparent), 0f, size.height * 0.4f))
                 drawContent()
+                metalFrame(if (accent != null) rim else Materials.SteelMid.copy(alpha = 0.9f), r, if (ornate) 3.dp.toPx() else 1.5.dp.toPx())
                 if (ornate) {
-                    val l = 14.dp.toPx(); val i = 5.dp.toPx(); val sw = 1.5.dp.toPx(); val d = 3.dp.toPx()
-                    val col = rim
-                    listOf(
-                        Triple(Offset(i, i), 1f, 1f), Triple(Offset(size.width - i, i), -1f, 1f),
-                        Triple(Offset(i, size.height - i), 1f, -1f), Triple(Offset(size.width - i, size.height - i), -1f, -1f),
-                    ).forEach { (p, sx, sy) ->
-                        drawLine(col, p, Offset(p.x + l * sx, p.y), sw)
-                        drawLine(col, p, Offset(p.x, p.y + l * sy), sw)
-                        val gem = Path().apply {
-                            moveTo(p.x + d * 1.6f * sx, p.y + d * 0.2f * sy); lineTo(p.x + d * 2.6f * sx, p.y + d * 1.3f * sy)
-                            lineTo(p.x + d * 1.6f * sx, p.y + d * 2.4f * sy); lineTo(p.x + d * 0.6f * sx, p.y + d * 1.3f * sy); close()
-                        }
-                        drawPath(gem, col)
-                    }
+                    val i = 9.dp.toPx(); val rr = 2.6.dp.toPx()
+                    val metal = androidx.compose.ui.graphics.lerp(rim, Materials.SteelMid, 0.35f)
+                    listOf(Offset(i, i), Offset(size.width - i, i), Offset(i, size.height - i), Offset(size.width - i, size.height - i))
+                        .forEach { rivet(it, rr, metal) }
                 }
             }
             .padding(if (ornate) 20.dp else 16.dp),
@@ -205,7 +208,7 @@ private fun Ornament(modifier: Modifier, flip: Boolean) {
     }
 }
 
-/** Gold, engraved-looking main action button. */
+/** Forged gold plate with an engraved label: the main action button. */
 @Composable
 fun RpgButton(
     text: String,
@@ -214,28 +217,43 @@ fun RpgButton(
     enabled: Boolean = true,
     color: Color = GameColors.Gold,
 ) {
-    val shape = RoundedCornerShape(12.dp)
+    val shape = RoundedCornerShape(10.dp)
+    val light = lerp(color, Color.White, 0.55f)
+    val dark = lerp(color, Color.Black, 0.55f)
     Box(
         modifier
             .height(54.dp)
+            .drawBehind { drawRoundRect(Color.Black.copy(alpha = 0.55f), Offset(0f, 3.dp.toPx()), size, CornerRadius(10.dp.toPx())) }
             .clip(shape)
-            .background(
-                if (enabled) Brush.verticalGradient(listOf(lerp(color, Color.White, 0.25f), color, lerp(color, Color.Black, 0.3f)))
-                else Brush.verticalGradient(listOf(GameColors.SurfaceHigh, GameColors.SurfaceHigh))
-            )
-            .border(1.5.dp, if (enabled) lerp(color, Color.Black, 0.45f) else GameColors.Track, shape)
+            .drawWithContent {
+                if (enabled) {
+                    // polished metal: bright band near the top, darker towards the base
+                    drawRect(Brush.verticalGradient(0f to light, 0.18f to color, 0.55f to lerp(color, Color.Black, 0.18f), 0.56f to lerp(color, Color.Black, 0.28f), 1f to dark))
+                    drawRect(Materials.grainBrush, alpha = 0.12f)
+                    drawLine(Color.White.copy(alpha = 0.7f), Offset(8.dp.toPx(), 1.5.dp.toPx()), Offset(size.width - 8.dp.toPx(), 1.5.dp.toPx()), 1.dp.toPx())
+                } else {
+                    drawRect(Brush.verticalGradient(listOf(Color(0xFF3A3E48), Color(0xFF23262E))))
+                    drawRect(Materials.grainBrush, alpha = 0.12f)
+                }
+                drawContent()
+                metalFrame(if (enabled) dark else Color(0xFF15171C), 10.dp.toPx(), 1.5.dp.toPx())
+            }
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text,
-            color = if (enabled) Color(0xFF231A00) else GameColors.Muted,
+            color = if (enabled) Color(0xFF2A1C02) else GameColors.Muted,
             fontFamily = Fonts.Display,
             fontWeight = FontWeight.Black,
             fontSize = 16.sp,
             letterSpacing = 0.5.sp,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            // engraved: a light edge under the dark letters
+            style = androidx.compose.ui.text.TextStyle(
+                shadow = androidx.compose.ui.graphics.Shadow(Color.White.copy(alpha = if (enabled) 0.45f else 0f), Offset(0f, 1.5f), 0f),
+            ),
         )
     }
 }

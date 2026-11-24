@@ -14,16 +14,31 @@ import kotlin.math.max
 import kotlin.math.min
 
 /** Painted palette: muted steel armour, warm leather, ink outlines; worked muscles in a red-orange wash. */
+/** The colours of the hero's kit; gear from chests changes them. */
+data class HeroLook(
+    val armour: Color = Color(0xFF7D8BA6),
+    val armourLight: Color = Color(0xFF9AA7BF),
+    val tunic: Color = Color(0xFF34406A),
+    val helmet: Color = Color(0xFF8B97AF),
+    val boot: Color = Color(0xFF5A3B28),
+    val glove: Color = Color(0xFF6E4A31),
+    val plume: Color = Color(0xFFC0392B),
+) {
+    companion object { val Default = HeroLook() }
+}
+
 object FigurePalette {
+    /** Set by drawHero for the figure being drawn. */
+    var look: HeroLook = HeroLook.Default
     val outline = Color(0xFF120E0C)
-    val armour = Color(0xFF7D8BA6)
-    val armourLight = Color(0xFF9AA7BF)
-    val tunic = Color(0xFF34406A)
+    val armour get() = look.armour
+    val armourLight get() = look.armourLight
+    val tunic get() = look.tunic
     val gold = Color(0xFFE9B949)
-    val helmet = Color(0xFF8B97AF)
-    val boot = Color(0xFF5A3B28)
-    val glove = Color(0xFF6E4A31)
-    val plume = Color(0xFFC0392B)
+    val helmet get() = look.helmet
+    val boot get() = look.boot
+    val glove get() = look.glove
+    val plume get() = look.plume
     val musclePrimary = Color(0xFFE8553A)
     val muscleSecondary = Color(0xFFF2A541)
     val floor = Color(0xFF4A4F63)
@@ -85,7 +100,15 @@ fun anchor(sk: Skeleton, a: Anchor): V = when (a) {
  * one ink silhouette per body part, flat colour, a light and a dark brush stroke for form,
  * and worked muscles as a warm paint wash. [glow] 0..1 pulses the wash. [trail] draws the movement path.
  */
-fun DrawScope.drawHero(art: ExerciseArt, t: Float, fit: Fit, glow: Float = 0.6f, trail: Boolean = false, dimmed: Boolean = false) {
+fun DrawScope.drawHero(
+    art: ExerciseArt, t: Float, fit: Fit, glow: Float = 0.6f, trail: Boolean = false, dimmed: Boolean = false,
+    look: HeroLook = HeroLook.Default,
+) {
+    FigurePalette.look = look
+    try { drawHeroWithLook(art, t, fit, glow, trail, dimmed) } finally { FigurePalette.look = HeroLook.Default }
+}
+
+private fun DrawScope.drawHeroWithLook(art: ExerciseArt, t: Float, fit: Fit, glow: Float, trail: Boolean, dimmed: Boolean) {
     val pose = art.start.lerp(art.finish, t)
     val sk = Skeleton(pose, art.frontView)
     val P = FigurePalette

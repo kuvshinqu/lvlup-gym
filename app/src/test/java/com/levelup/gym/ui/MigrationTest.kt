@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.levelup.gym.data.GymDatabase
 import com.levelup.gym.data.MIGRATION_1_2
+import com.levelup.gym.data.MIGRATION_2_3
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
@@ -17,7 +18,7 @@ import java.io.File
 /** Upgrading from v0.1 must keep every logged workout and set. */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
-    @Test fun v1ToV2KeepsData() = runBlocking {
+    @Test fun upgradeFromV1KeepsData() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val file = context.getDatabasePath("migration-test.db").apply { parentFile?.mkdirs(); delete() }
 
@@ -43,11 +44,13 @@ class MigrationTest {
 
         // Open with v2 + migration; Room validates the resulting schema on open.
         val room = Room.databaseBuilder(context, GymDatabase::class.java, file.absolutePath)
-            .addMigrations(MIGRATION_1_2).allowMainThreadQueries().build()
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3).allowMainThreadQueries().build()
         val dao = room.dao()
         assertEquals(77, dao.totalXp(1).first())
         dao.insertBodyWeight(com.levelup.gym.data.BodyWeightEntity(userId = 1, weightKg = 80.5))
         assertEquals(80.5, dao.latestBodyWeight(1).first()!!.weightKg, 0.001)
+        dao.insertChest(com.levelup.gym.data.ChestEntity(userId = 1, tier = "WOODEN", source = "workout"))
+        assertEquals(1, dao.chests(1).first().size)
         room.close()
     }
 }

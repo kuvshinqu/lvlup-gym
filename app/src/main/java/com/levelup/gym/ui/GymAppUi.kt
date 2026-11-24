@@ -63,6 +63,7 @@ private val tabs = listOf(
     Tab("program", "Quests", R.drawable.ic_quest_scroll),
     Tab("history", "Chronicle", R.drawable.ic_campaign_map),
     Tab("exercises", "Armory", R.drawable.ic_mission_swords),
+    Tab("treasury", "Treasury", R.drawable.ic_loot_chest),
 )
 
 @Composable
@@ -84,6 +85,7 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
                     toast("+${e.xp} XP · ${e.label}" + if (e.personalRecord) " · NEW BEST!" else "")
                 is GameEvent.LevelUp -> levelUp = e
                 is GameEvent.Message -> toast(e.text)
+                is GameEvent.ChestFound -> toast("${e.tier.label} found · ${e.reason}")
             }
         }
     }
@@ -95,9 +97,7 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
     val showBar = tabs.any { it.route == route }
 
     Scaffold(
-        modifier = Modifier.background(
-            Brush.verticalGradient(listOf(Color(0xFF161B2B), GameColors.Background, Color(0xFF0A0B10)))
-        ),
+        modifier = Modifier.stoneBackground(),
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
         snackbarHost = {
@@ -113,9 +113,13 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
         bottomBar = {
             if (showBar) {
                 NavigationBar(
-                    containerColor = Color(0xFF12151F),
+                    containerColor = Color.Transparent,
                     modifier = Modifier.drawBehind {
-                        drawLine(GameColors.Gold.copy(alpha = 0.35f), Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx())
+                        // iron bar along the bottom with grain and a lit top edge
+                        drawRect(Brush.verticalGradient(listOf(Color(0xFF2B2F38), Color(0xFF15171C), Color(0xFF0B0C0F))))
+                        drawRect(Materials.grainBrush, alpha = 0.2f)
+                        drawLine(Color.Black, Offset(0f, 0f), Offset(size.width, 0f), 2.dp.toPx())
+                        drawLine(Materials.SteelLight.copy(alpha = 0.35f), Offset(0f, 2.dp.toPx()), Offset(size.width, 2.dp.toPx()), 1.dp.toPx())
                     },
                 ) {
                     tabs.forEach { tab ->
@@ -166,6 +170,7 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
                     onBuild = { id -> nav.navigate(if (id == null) "builder" else "builder?id=$id") },
                 )
             }
+            composable("treasury") { TreasuryScreen(vm) }
             composable("quiz") { QuizScreen(vm, onDone = { nav.popBackStack() }) }
             composable("library") { LibraryScreen(vm, onBack = { nav.popBackStack() }) }
             composable(

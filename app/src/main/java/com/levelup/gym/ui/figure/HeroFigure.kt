@@ -15,9 +15,9 @@ import androidx.compose.ui.Modifier
 
 /** A still of the hero at [t] (0 = start, 1 = finish). */
 @Composable
-fun HeroFigure(art: ExerciseArt, modifier: Modifier = Modifier, t: Float = 1f, trail: Boolean = false, glow: Float = 0.7f) {
+fun HeroFigure(art: ExerciseArt, modifier: Modifier = Modifier, t: Float = 1f, trail: Boolean = false, glow: Float = 0.7f, look: HeroLook = HeroLook.Default) {
     Canvas(modifier) {
-        drawHero(art, t, fitFor(art, size.width, size.height, size.minDimension * 0.04f), glow = glow, trail = trail)
+        drawHero(art, t, fitFor(art, size.width, size.height, size.minDimension * 0.04f), glow = glow, trail = trail, look = look)
     }
 }
 

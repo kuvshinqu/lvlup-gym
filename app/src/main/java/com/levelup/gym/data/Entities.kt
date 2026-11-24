@@ -117,3 +117,39 @@ data class BodyWeightEntity(
     val weightKg: Double,
     val loggedAt: Long = System.currentTimeMillis(),
 )
+
+/**
+ * A loot chest. Earned by finishing workouts, the weekly quest and level ups, or bought with gold.
+ * Opening it fills [itemKey] (see game/Loot.kt); a duplicate item is melted into gold ([duplicate]).
+ */
+@Entity(
+    tableName = "chests",
+    foreignKeys = [ForeignKey(UserEntity::class, ["id"], ["userId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("userId")],
+)
+data class ChestEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val userId: Long,
+    /** ChestTier name. */
+    val tier: String,
+    /** Why it dropped: workout, weekly, level, forge. */
+    val source: String,
+    val earnedAt: Long = System.currentTimeMillis(),
+    val openedAt: Long? = null,
+    val itemKey: String? = null,
+    val duplicate: Boolean = false,
+    /** Gold paid for it at the forge. */
+    val cost: Int = 0,
+)
+
+/** Which item the hero wears in each slot. */
+@Entity(
+    tableName = "equipped",
+    primaryKeys = ["userId", "slot"],
+    foreignKeys = [ForeignKey(UserEntity::class, ["id"], ["userId"], onDelete = ForeignKey.CASCADE)],
+)
+data class EquippedEntity(
+    val userId: Long,
+    val slot: String,
+    val itemKey: String,
+)

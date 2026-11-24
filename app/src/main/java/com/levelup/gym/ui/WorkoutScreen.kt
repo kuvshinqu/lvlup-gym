@@ -190,8 +190,19 @@ fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit, onOpenExercise: (Long) 
                             }
                             val r = reps.toNumber()?.toInt() ?: 0
                             val kg = UnitsFormat.displayToKg(weight.toNumber() ?: 0.0, units)
+                            val best by androidx.compose.runtime.produceState<Pair<Double?, Int?>>(null to null, selected?.id, sets.size) {
+                                value = selected?.let { vm.bestFor(it.id) } ?: (null to null)
+                            }
+                            val preview = Leveling.scoreSet(r, kg, best.first, best.second)
+                            best.first?.takeIf { kg > 0 }?.let { b ->
+                                Text(
+                                    "Your best: ${UnitsFormat.weight(b, units)} estimated 1-rep max. This set: " +
+                                        "${(preview.effort * 100).toInt()}% effort" + if (preview.warmup) " (warm-up)" else "",
+                                    style = MaterialTheme.typography.bodySmall, color = GameColors.Muted,
+                                )
+                            }
                             RpgButton(
-                                "Strike!  Log set  ·  +${Leveling.xpForSet(r, kg, false)} XP",
+                                "Strike!  Log set  ·  +${preview.xp} XP" + if (preview.personalRecord) "  ·  NEW BEST" else "",
                                 enabled = selected != null && r > 0,
                                 onClick = { selected?.let { vm.logSet(it, r, kg) } },
                                 modifier = Modifier.fillMaxWidth(),

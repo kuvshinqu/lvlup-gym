@@ -6,63 +6,63 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LevelingTest {
-    @Test fun setXp_basicSet() {
-        // 10 base + 8 reps + (8*60/50 = 9) volume
-        assertEquals(27, Leveling.xpForSet(reps = 8, weightKg = 60.0, isPersonalRecord = false))
+    @Test fun firstSetCountsAsFullEffort() {
+        val s = Leveling.scoreSet(reps = 8, weightKg = 60.0, bestE1rm = null, bestReps = null)
+        assertEquals(20, s.xp)
+        assertFalse(s.personalRecord)
     }
 
-    @Test fun setXp_bodyweightSet() {
-        assertEquals(22, Leveling.xpForSet(reps = 12, weightKg = 0.0, isPersonalRecord = false))
+    @Test fun effortScalesWithYourBest() {
+        val best = Leveling.e1rm(100.0, 5)
+        // same strength as your best: full points
+        assertEquals(20, Leveling.scoreSet(5, 100.0, best, null).xp)
+        // 80% of your best: 5 + 15*0.8 = 17
+        assertEquals(17, Leveling.scoreSet(5, 80.0, best, null).xp)
+        // warm-up under 60%
+        val warm = Leveling.scoreSet(5, 50.0, best, null)
+        assertTrue(warm.warmup); assertEquals(2, warm.xp)
     }
 
-    @Test fun setXp_isCapped() {
-        assertEquals(10 + 20 + 40, Leveling.xpForSet(reps = 100, weightKg = 500.0, isPersonalRecord = false))
+    @Test fun newBestEarnsBonus() {
+        val s = Leveling.scoreSet(8, 62.5, Leveling.e1rm(60.0, 8), null)
+        assertTrue(s.personalRecord)
+        assertEquals(20 + 20, s.xp)
     }
 
-    @Test fun setXp_personalRecordBonus() {
-        assertEquals(27 + 25, Leveling.xpForSet(reps = 8, weightKg = 60.0, isPersonalRecord = true))
+    @Test fun bodyweightComparesReps() {
+        val s = Leveling.scoreSet(12, 0.0, null, 10)
+        assertTrue(s.personalRecord)
+        assertEquals(40, s.xp)
+        assertEquals(17, Leveling.scoreSet(8, 0.0, null, 10).xp)
     }
 
-    @Test fun personalRecord_rules() {
-        assertFalse(Leveling.isPersonalRecord(50.0, null))
-        assertFalse(Leveling.isPersonalRecord(50.0, 50.0))
-        assertTrue(Leveling.isPersonalRecord(52.5, 50.0))
+    @Test fun junkVolumeIsCapped() {
+        assertEquals(3, Leveling.scoreSet(8, 60.0, null, null, setsBeforeInWorkout = 24).xp)
+    }
+
+    @Test fun gearAddsAFewPercent() {
+        assertEquals(22, Leveling.scoreSet(8, 60.0, null, null, gearBonus = 0.10).xp)
+        assertEquals(25, Leveling.scoreSet(8, 60.0, null, null, gearBonus = 5.0).xp)
     }
 
     @Test fun levels_thresholds() {
         assertEquals(1, Leveling.levelFor(0))
-        assertEquals(1, Leveling.levelFor(99))
-        assertEquals(2, Leveling.levelFor(100))
-        assertEquals(2, Leveling.levelFor(299))
-        assertEquals(3, Leveling.levelFor(300))
-        assertEquals(4, Leveling.levelFor(600))
+        assertEquals(1, Leveling.levelFor(79))
+        assertEquals(2, Leveling.levelFor(80))
+        assertEquals(3, Leveling.levelFor(320))
+        assertEquals(10, Leveling.levelFor(6480))
     }
 
     @Test fun progress_withinLevel() {
-        val p = Leveling.progress(150)
+        val p = Leveling.progress(120)
         assertEquals(2, p.level)
-        assertEquals(50, p.xpIntoLevel)
-        assertEquals(200, p.xpNeededForNext)
-        assertEquals(25, p.percent)
-    }
-}
-
-class CardioAndQuestTest {
-    @Test fun cardioXp() {
-        // 10 base + 30 min + 2 per km * 5 km
-        assertEquals(50, Leveling.xpForCardio(durationSec = 30 * 60, distanceM = 5000.0))
-        assertEquals(10 + 60 + 30, Leveling.xpForCardio(durationSec = 300 * 60, distanceM = 100_000.0))
-    }
-
-    @Test fun weeklyQuestBonusOnlyOnFourth() {
-        assertEquals(50, Leveling.finishBonus(3))
-        assertEquals(150, Leveling.finishBonus(4))
-        assertEquals(50, Leveling.finishBonus(5))
+        assertEquals(40, p.xpIntoLevel)
+        assertEquals(240, p.xpNeededForNext)
     }
 
     @Test fun skillCurveIsCheaper() {
-        assertEquals(2, Leveling.levelFor(50, Leveling.SKILL_STEP))
-        assertEquals(3, Leveling.levelFor(150, Leveling.SKILL_STEP))
+        assertEquals(2, Leveling.levelFor(15, Leveling.SKILL_STEP))
+        assertEquals(3, Leveling.levelFor(60, Leveling.SKILL_STEP))
     }
 
     @Test fun programRotation() {

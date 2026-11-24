@@ -81,6 +81,18 @@ class AppFlowTest {
         compose.waitForIdle()
         shot("4_hero_after")
 
+        // Loot: the quest dropped an iron chest (it had a new best)
+        compose.onNodeWithText("Treasury").performClick()
+        waitFor("Iron chest")
+        shot("4b_treasury")
+        compose.onAllNodesWithText("Tap to open")[0].performClick()
+        waitFor("Claim")
+        shot("4c_chest_open")
+        compose.onNodeWithText("Claim").performClick()
+        waitFor("Gear score")
+        compose.waitForIdle()
+        shot("4d_treasury_after")
+
         compose.onNodeWithText("Chronicle").performClick()
         waitFor("Siege of the Upper Keep")
         shot("5_history")

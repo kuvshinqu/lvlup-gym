@@ -134,4 +134,33 @@ interface GymDao {
 
     @Query("SELECT * FROM body_weights WHERE userId = :userId ORDER BY loggedAt DESC LIMIT 1")
     fun latestBodyWeight(userId: Long): Flow<BodyWeightEntity?>
+
+    // Loot
+    @Insert
+    suspend fun insertChest(chest: ChestEntity): Long
+
+    @Query("SELECT * FROM chests WHERE userId = :userId ORDER BY earnedAt DESC, id DESC")
+    fun chests(userId: Long): Flow<List<ChestEntity>>
+
+    @Query("SELECT * FROM chests WHERE id = :id")
+    suspend fun chest(id: Long): ChestEntity?
+
+    @Query("UPDATE chests SET openedAt = :openedAt, itemKey = :itemKey, duplicate = :duplicate WHERE id = :id")
+    suspend fun openChest(id: Long, openedAt: Long, itemKey: String, duplicate: Boolean)
+
+    @Query("SELECT * FROM equipped WHERE userId = :userId")
+    fun equipped(userId: Long): Flow<List<EquippedEntity>>
+
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
+    suspend fun equip(item: EquippedEntity)
+
+    // Effort-based XP
+    @Query("SELECT MAX(weightKg * (1 + MIN(reps, 12) / 30.0)) FROM sets WHERE exerciseId = :exerciseId AND weightKg > 0 AND reps > 0")
+    suspend fun bestE1rm(exerciseId: Long): Double?
+
+    @Query("SELECT MAX(reps) FROM sets WHERE exerciseId = :exerciseId AND weightKg = 0 AND durationSec = 0")
+    suspend fun bestBodyweightReps(exerciseId: Long): Int?
+
+    @Query("SELECT COUNT(*) FROM sets WHERE workoutId = :workoutId AND isPersonalRecord = 1")
+    suspend fun prCountForWorkout(workoutId: Long): Int
 }
