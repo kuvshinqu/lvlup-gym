@@ -45,10 +45,10 @@ private val scheme = darkColorScheme(
 
 private val base = Typography()
 private val typography = base.copy(
-    headlineLarge = base.headlineLarge.copy(fontWeight = FontWeight.Black),
-    headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Black),
-    titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Bold),
-    titleMedium = base.titleMedium.copy(fontWeight = FontWeight.Bold),
+    headlineLarge = base.headlineLarge.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Black),
+    headlineMedium = base.headlineMedium.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Black),
+    titleLarge = base.titleLarge.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold),
+    titleMedium = base.titleMedium.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold),
     labelSmall = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp, letterSpacing = 1.sp),
 )
 

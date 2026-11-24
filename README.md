@@ -7,7 +7,7 @@ An Android gym tracker where you are a hero who levels up. Kotlin + Jetpack Comp
 - **Program**: starter 4-day Upper/Lower split (Mon Upper A, Tue Lower A, Thu Upper B, Fri Lower B). Each day is a "quest" with objectives (sets × reps). The app suggests the next day in the rotation.
 - **Workout**: pick an exercise, log reps and weight (or minutes and distance for cardio), see XP per set, new-best badges, level-up popup.
 - **History**: finished workouts with sets, volume, cardio time and XP; open one to see every set, or delete it.
-- **Exercises**: 29 starter exercises (incl. 5 cardio), each with start/finish photos and short form notes (tap one for "How to"); add your own and choose which skill it trains.
+- **Armory (exercises)**: 29 starter exercises (incl. 5 cardio). Each has a drawn armoured hero that animates from start (A) to finish (B) with the worked muscles glowing, plus short form notes (tap one for "How to"). Add your own and choose which skill it trains.
 - **Body weight**: weigh-ins on the hero screen with the latest value and a 30-day trend line. Never affects XP. Bodyweight exercises (push-up, pull-up, plank, hanging leg raise) show "× bodyweight", plus any added weight.
 - **Settings**: hero name, kg/km or lb/mi. Data is always stored in kg and metres.
 
@@ -29,8 +29,8 @@ The click-through test (`AppFlowTest`) saves screenshots to `app/build/screensho
 ## Ready for more users
 Every exercise, workout and set belongs to a user (`users` table). v1 creates one hero; adding a user picker or accounts later doesn't need a data migration.
 
-## Credits
-Exercise photos: [Free Exercise DB](https://github.com/yuhonas/free-exercise-db), public domain (Unlicense).
+## Exercise drawings
+All figures are drawn in code (`ui/figure/`): a small 2D rig where hands and feet are placed and elbows/knees are solved, so poses animate smoothly. Poses and props per exercise are in `ExerciseArt.kt`. `FigureGalleryTest` renders contact sheets of every start/finish pose to `app/build/screenshots/figures_*.png`.
 
 ## Signing
 `app/debug.keystore` is the shared debug key, so a new build installs over the old one without losing data.

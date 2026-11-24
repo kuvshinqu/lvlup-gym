@@ -16,6 +16,8 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.Snackbar
+import androidx.compose.foundation.border
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,6 +31,14 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,9 +55,9 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 
 private val tabs = listOf(
     Tab("hero", "Hero", Icons.Filled.Face),
-    Tab("program", "Program", Icons.Filled.DateRange),
-    Tab("history", "History", Icons.AutoMirrored.Filled.List),
-    Tab("exercises", "Exercises", Icons.Filled.Star),
+    Tab("program", "Quests", Icons.Filled.DateRange),
+    Tab("history", "Chronicle", Icons.AutoMirrored.Filled.List),
+    Tab("exercises", "Armory", Icons.Filled.Star),
 )
 
 @Composable
@@ -78,11 +88,29 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
     val showBar = tabs.any { it.route == route }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbar) },
+        modifier = Modifier.background(
+            Brush.verticalGradient(listOf(Color(0xFF161B2B), GameColors.Background, Color(0xFF0A0B10)))
+        ),
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground,
+        snackbarHost = {
+            SnackbarHost(snackbar) { data ->
+                Snackbar(
+                    data,
+                    containerColor = Color(0xFF1C2233),
+                    contentColor = GameColors.Gold,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                )
+            }
+        },
         bottomBar = {
             if (showBar) {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                NavigationBar(
+                    containerColor = Color(0xFF12151F),
+                    modifier = Modifier.drawBehind {
+                        drawLine(GameColors.Gold.copy(alpha = 0.35f), Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx())
+                    },
+                ) {
                     tabs.forEach { tab ->
                         NavigationBarItem(
                             selected = route == tab.route,
@@ -140,10 +168,14 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
 
     levelUp?.let { e ->
         AlertDialog(
+            containerColor = Color(0xFF1A1F30),
             onDismissRequest = { levelUp = null },
             confirmButton = { TextButton(onClick = { levelUp = null }) { Text("Onward!") } },
             title = {
-                Text("LEVEL UP!", modifier = Modifier, color = GameColors.Gold, textAlign = TextAlign.Center)
+                Text(
+                    "LEVEL UP!", modifier = Modifier.fillMaxWidth(), color = GameColors.Gold, textAlign = TextAlign.Center,
+                    fontFamily = FontFamily.Serif, fontWeight = FontWeight.Black,
+                )
             },
             text = {
                 Column(

@@ -29,6 +29,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.levelup.gym.game.Leveling
 import com.levelup.gym.game.UnitsFormat
+import com.levelup.gym.ui.figure.ExerciseArts
+import com.levelup.gym.ui.figure.HeroFigure
+import androidx.compose.foundation.layout.size
 
 @Composable
 fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -> Unit) {
@@ -49,7 +52,7 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("HERO", style = MaterialTheme.typography.labelSmall, color = GameColors.Muted, modifier = Modifier.weight(1f))
+                Text("HERO'S JOURNAL", style = MaterialTheme.typography.labelSmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif, color = GameColors.Gold.copy(alpha = 0.8f), modifier = Modifier.weight(1f))
                 IconButton(onClick = onOpenSettings) { Icon(Icons.Filled.Settings, "Settings", tint = GameColors.Muted) }
             }
         }
@@ -59,12 +62,14 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
             GameCard(accent = GameColors.Gold) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        LevelBadge(progress.level, size = 72.dp)
-                        Spacer(Modifier.width(16.dp))
-                        Column(Modifier.weight(1f)) {
+                        HeroFigure(ExerciseArts.idle, Modifier.size(width = 92.dp, height = 120.dp), t = 0f)
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(name, style = MaterialTheme.typography.headlineMedium)
-                            Text(Leveling.title(progress.level), color = GameColors.Gold, fontWeight = FontWeight.Bold)
+                            Text(Leveling.title(progress.level).uppercase(), color = GameColors.Gold, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            Text("Total ${progress.totalXp} XP", style = MaterialTheme.typography.bodySmall, color = GameColors.Muted)
                         }
+                        LevelBadge(progress.level, size = 76.dp)
                     }
                     XpBar(progress.fraction, height = 14.dp)
                     Row {
@@ -86,17 +91,14 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
         // Main action
         item {
             if (active != null) {
-                Button(onClick = onOpenWorkout, modifier = Modifier.fillMaxWidth().height(56.dp)) {
-                    Text("Continue your quest", fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                }
+                RpgButton("Continue your quest", onClick = onOpenWorkout, modifier = Modifier.fillMaxWidth())
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
+                    RpgButton(
+                        "Begin ${next.name}: ${next.questName}",
                         onClick = { vm.startWorkout(next.id); onOpenWorkout() },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                    ) {
-                        Text("Start ${next.name}: ${next.questName}", fontWeight = FontWeight.Bold)
-                    }
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                     OutlinedButton(
                         onClick = { vm.startWorkout(null); onOpenWorkout() },
                         modifier = Modifier.fillMaxWidth(),
@@ -156,7 +158,7 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
         }
 
         // Lifetime stats
-        item { SectionLabel("Legend so far") }
+        item { SectionLabel("Deeds so far") }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatBox("${stats.workoutCount}", "Workouts", Modifier.weight(1f))

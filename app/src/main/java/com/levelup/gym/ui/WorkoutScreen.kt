@@ -123,7 +123,7 @@ fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit, onOpenExercise: (Long) 
                 IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
             },
             actions = { XpPill(sessionXp, Modifier.padding(end = 12.dp)) },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
         )
 
         if (workout == null) {
@@ -138,8 +138,8 @@ fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit, onOpenExercise: (Long) 
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             if (selected != null) {
-                                ExerciseImage(
-                                    ExerciseGuides.forName(selected.name)?.startImage,
+                                ExerciseThumb(
+                                    selected.name,
                                     selected.muscleGroup,
                                     Modifier.size(56.dp).clickable { onOpenExercise(selected.id) },
                                 )
@@ -169,16 +169,13 @@ fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit, onOpenExercise: (Long) 
                             }
                             val min = minutes.toNumber() ?: 0.0
                             val km = distance.toNumber() ?: 0.0
-                            Button(
+                            val preview = Leveling.xpForCardio((min * 60).toInt(), UnitsFormat.displayToMetres(km, units))
+                            RpgButton(
+                                "Log cardio  ·  +$preview XP",
                                 enabled = min > 0,
-                                onClick = {
-                                    vm.logCardio(selected, (min * 60).toInt(), UnitsFormat.displayToMetres(km, units))
-                                },
-                                modifier = Modifier.fillMaxWidth().height(52.dp),
-                            ) {
-                                val preview = Leveling.xpForCardio((min * 60).toInt(), UnitsFormat.displayToMetres(km, units))
-                                Text("Log cardio  ·  +$preview XP", fontWeight = FontWeight.Bold)
-                            }
+                                onClick = { vm.logCardio(selected, (min * 60).toInt(), UnitsFormat.displayToMetres(km, units)) },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
                         } else {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Stepper(
@@ -194,13 +191,12 @@ fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit, onOpenExercise: (Long) 
                             }
                             val r = reps.toNumber()?.toInt() ?: 0
                             val kg = UnitsFormat.displayToKg(weight.toNumber() ?: 0.0, units)
-                            Button(
+                            RpgButton(
+                                "Strike!  Log set  ·  +${Leveling.xpForSet(r, kg, false)} XP",
                                 enabled = selected != null && r > 0,
                                 onClick = { selected?.let { vm.logSet(it, r, kg) } },
-                                modifier = Modifier.fillMaxWidth().height(52.dp),
-                            ) {
-                                Text("Log set  ·  +${Leveling.xpForSet(r, kg, false)} XP", fontWeight = FontWeight.Bold)
-                            }
+                                modifier = Modifier.fillMaxWidth(),
+                            )
                         }
                         if (selected != null) {
                             val skill = Skills.forGroup(selected.muscleGroup)
@@ -270,11 +266,13 @@ fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit, onOpenExercise: (Long) 
 
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilledTonalButton(
+                    RpgButton(
+                        "Complete quest  ·  +${Leveling.FINISH_WORKOUT_XP} XP",
                         onClick = { vm.finishWorkout() },
                         enabled = sets.isNotEmpty(),
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                    ) { Text("Finish quest  ·  +${Leveling.FINISH_WORKOUT_XP} XP", fontWeight = FontWeight.Bold) }
+                        color = GameColors.Xp,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                     TextButton(onClick = { confirmDiscard = true }, modifier = Modifier.fillMaxWidth()) {
                         Text("Abandon workout", color = MaterialTheme.colorScheme.error)
                     }
@@ -357,7 +355,7 @@ private fun ExercisePicker(
                             Modifier.fillMaxWidth().clickable { onPick(ex) }.padding(vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            ExerciseImage(ExerciseGuides.forName(ex.name)?.startImage, ex.muscleGroup, Modifier.size(40.dp))
+                            ExerciseThumb(ex.name, ex.muscleGroup, Modifier.size(44.dp))
                             Spacer(Modifier.width(12.dp))
                             Text(ex.name)
                         }

@@ -47,7 +47,7 @@ fun ExercisesScreen(vm: GymViewModel, onOpenExercise: (Long) -> Unit) {
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item {
             Column {
-                Text("ARSENAL", style = MaterialTheme.typography.labelSmall, color = GameColors.Muted)
+                Text("ARMORY", style = MaterialTheme.typography.labelSmall, color = GameColors.Muted)
                 Text("Exercises", style = MaterialTheme.typography.headlineMedium)
             }
         }
@@ -101,7 +101,7 @@ fun ExercisesScreen(vm: GymViewModel, onOpenExercise: (Long) -> Unit) {
                     Modifier.fillMaxWidth().clickable { onOpenExercise(ex.id) },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    ExerciseImage(ExerciseGuides.forName(ex.name)?.startImage, ex.muscleGroup, Modifier.size(48.dp))
+                    ExerciseThumb(ex.name, ex.muscleGroup, Modifier.size(52.dp))
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(ex.name, style = MaterialTheme.typography.bodyLarge)

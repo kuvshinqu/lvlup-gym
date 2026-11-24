@@ -41,10 +41,10 @@ class AppFlowTest {
     }
 
     @Test fun fullQuestFlow() {
-        waitFor("Start Upper A")
+        waitFor("Begin Upper A")
         shot("1_hero")
 
-        compose.onNodeWithText("Start Upper A", substring = true).performClick()
+        compose.onNodeWithText("Begin Upper A", substring = true).performClick()
         waitFor("Log set")
         compose.onNodeWithText("Weight (kg)").performTextReplacement("60")
         compose.onNodeWithText("Log set", substring = true).performClick()
@@ -63,22 +63,22 @@ class AppFlowTest {
         waitFor("NEW BEST")
         shot("3_workout_log")
 
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Finish quest", substring = true))
-        compose.onNodeWithText("Finish quest", substring = true).performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Complete quest", substring = true))
+        compose.onNodeWithText("Complete quest", substring = true).performClick()
         waitFor("Lower A")
         compose.mainClock.advanceTimeBy(1_000)
         compose.waitForIdle()
         shot("4_hero_after")
 
-        compose.onNodeWithText("History").performClick()
+        compose.onNodeWithText("Chronicle").performClick()
         waitFor("Siege of the Upper Keep")
         shot("5_history")
 
-        compose.onNodeWithText("Program").performClick()
+        compose.onNodeWithText("Quests").performClick()
         waitFor("Upper / Lower")
         shot("6_program")
 
-        compose.onNodeWithText("Exercises").performClick()
+        compose.onNodeWithText("Armory").performClick()
         waitFor("Add exercise")
         shot("7_exercises")
 

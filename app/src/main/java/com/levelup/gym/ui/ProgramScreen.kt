@@ -67,11 +67,7 @@ fun ProgramScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenExercise: (
                                 .padding(vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            ExerciseImage(
-                                ExerciseGuides.forName(ex.exerciseName)?.startImage,
-                                entity?.muscleGroup ?: "",
-                                Modifier.size(40.dp),
-                            )
+                            ExerciseThumb(ex.exerciseName, entity?.muscleGroup ?: "", Modifier.size(44.dp))
                             Spacer(Modifier.width(10.dp))
                             Text(ex.exerciseName, modifier = Modifier.weight(1f))
                             Text("${ex.sets} × ${ex.reps}", fontWeight = FontWeight.Bold)
@@ -82,7 +78,7 @@ fun ProgramScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenExercise: (
                     }
                     if (active == null) {
                         val start = { vm.startWorkout(day.id); onOpenWorkout() }
-                        if (isNext) Button(onClick = start, modifier = Modifier.fillMaxWidth()) { Text("Begin quest") }
+                        if (isNext) RpgButton("Begin quest", onClick = start, modifier = Modifier.fillMaxWidth())
                         else OutlinedButton(onClick = start, modifier = Modifier.fillMaxWidth()) { Text("Begin quest") }
                     }
                 }

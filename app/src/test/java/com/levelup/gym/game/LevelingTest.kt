@@ -91,9 +91,7 @@ class ExerciseGuideTest {
             val guide = ExerciseGuides.forName(seed.name)
             assertTrue("${seed.name} has no guide", guide != null)
             assertTrue("${seed.name} has no cues", guide!!.cues.isNotEmpty() && guide.avoid.isNotBlank())
-            listOf(guide.startImage, guide.finishImage).forEach {
-                assertTrue("missing $it", java.io.File("src/main/assets/$it").exists())
-            }
+            assertTrue("${seed.name} has no drawing", com.levelup.gym.ui.figure.ExerciseArts.forName(seed.name) != null)
         }
     }
 }

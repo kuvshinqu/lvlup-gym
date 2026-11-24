@@ -1,27 +1,20 @@
 package com.levelup.gym.game
 
 /**
- * Pictures and short form notes for the starter exercises.
- * Photos come from Free Exercise DB (github.com/yuhonas/free-exercise-db, public domain / Unlicense)
- * and live in assets/exercises/<slug>_0.jpg (start) and <slug>_1.jpg (finish).
+ * Short form notes for the starter exercises. The drawings live in ui/figure/ExerciseArt.kt.
  */
 data class ExerciseGuide(
-    val imageSlug: String,
     val cues: List<String>,
     val avoid: String,
     /** Done with your own body; a weight entry means added weight (vest, belt, dumbbell). */
     val bodyweight: Boolean = false,
     /** Reps are counted as seconds (planks). */
     val timed: Boolean = false,
-) {
-    val startImage get() = "exercises/${imageSlug}_0.jpg"
-    val finishImage get() = "exercises/${imageSlug}_1.jpg"
-}
+)
 
 object ExerciseGuides {
     private val guides = mapOf(
         "Bench Press" to ExerciseGuide(
-            "bench_press",
             listOf(
                 "Eyes under the bar, feet flat, shoulder blades squeezed back and down.",
                 "Grip a bit wider than shoulders, wrists stacked over elbows.",
@@ -31,7 +24,6 @@ object ExerciseGuides {
             "Bouncing the bar off your chest or flaring elbows straight out to the sides.",
         ),
         "Incline Dumbbell Press" to ExerciseGuide(
-            "incline_dumbbell_press",
             listOf(
                 "Set the bench to 30-45°, kick the dumbbells up from your knees.",
                 "Shoulder blades back, dumbbells over your upper chest.",
@@ -40,7 +32,6 @@ object ExerciseGuides {
             "Setting the bench too steep, which turns it into a shoulder press.",
         ),
         "Push-up" to ExerciseGuide(
-            "push_up",
             listOf(
                 "Hands just wider than shoulders, body in one straight line from head to heels.",
                 "Brace your abs and squeeze your glutes.",
@@ -51,7 +42,6 @@ object ExerciseGuides {
             bodyweight = true,
         ),
         "Barbell Row" to ExerciseGuide(
-            "barbell_row",
             listOf(
                 "Hinge forward to about 45°, slight knee bend, back flat.",
                 "Grip just outside your knees, arms long.",
@@ -61,7 +51,6 @@ object ExerciseGuides {
             "Jerking the weight up with your lower back or rounding your spine.",
         ),
         "Pull-up" to ExerciseGuide(
-            "pull_up",
             listOf(
                 "Hang with hands a bit wider than shoulders, palms facing away.",
                 "Pull shoulders down first, then drive elbows toward your ribs.",
@@ -72,7 +61,6 @@ object ExerciseGuides {
             bodyweight = true,
         ),
         "Lat Pulldown" to ExerciseGuide(
-            "lat_pulldown",
             listOf(
                 "Thighs locked under the pad, grip a bit wider than shoulders.",
                 "Lean back slightly, chest up.",
@@ -82,7 +70,6 @@ object ExerciseGuides {
             "Pulling the bar behind your neck or leaning way back to yank it down.",
         ),
         "Seated Cable Row" to ExerciseGuide(
-            "seated_cable_row",
             listOf(
                 "Sit tall, knees slightly bent, chest up.",
                 "Pull the handle to your belly, squeezing shoulder blades together.",
@@ -91,7 +78,6 @@ object ExerciseGuides {
             "Rocking your torso back and forth to move the weight.",
         ),
         "Deadlift" to ExerciseGuide(
-            "deadlift",
             listOf(
                 "Bar over mid-foot, feet hip-width, grip just outside your legs.",
                 "Push your hips back, shins to the bar, chest up, back flat.",
@@ -101,7 +87,6 @@ object ExerciseGuides {
             "Rounding the lower back or letting the bar drift away from your body.",
         ),
         "Squat" to ExerciseGuide(
-            "squat",
             listOf(
                 "Bar on your upper back, feet shoulder-width, toes slightly out.",
                 "Big breath and brace, then sit down between your heels.",
@@ -111,7 +96,6 @@ object ExerciseGuides {
             "Knees caving in, heels lifting, or cutting depth short.",
         ),
         "Romanian Deadlift" to ExerciseGuide(
-            "romanian_deadlift",
             listOf(
                 "Stand tall holding the bar, soft knees.",
                 "Push your hips straight back, sliding the bar down your thighs.",
@@ -121,7 +105,6 @@ object ExerciseGuides {
             "Bending the knees into a squat or rounding the back to reach lower.",
         ),
         "Leg Press" to ExerciseGuide(
-            "leg_press",
             listOf(
                 "Feet shoulder-width in the middle of the platform.",
                 "Lower until knees are about 90°, keeping your lower back on the pad.",
@@ -130,7 +113,6 @@ object ExerciseGuides {
             "Going so deep that your hips curl off the seat.",
         ),
         "Bulgarian Split Squat" to ExerciseGuide(
-            "bulgarian_split_squat",
             listOf(
                 "Back foot on a bench, front foot far enough forward to drop straight down.",
                 "Torso tall or slightly forward, dumbbells at your sides.",
@@ -140,7 +122,6 @@ object ExerciseGuides {
             "Front foot too close to the bench, which pushes the knee far past the toes.",
         ),
         "Leg Curl" to ExerciseGuide(
-            "leg_curl",
             listOf(
                 "Pad just above your heels, knees just off the bench edge.",
                 "Curl your heels toward your glutes, hips pressed down.",
@@ -149,7 +130,6 @@ object ExerciseGuides {
             "Lifting the hips to swing the weight up.",
         ),
         "Leg Extension" to ExerciseGuide(
-            "leg_extension",
             listOf(
                 "Knees lined up with the machine's pivot, pad on lower shins.",
                 "Straighten your legs and squeeze the quads for a second.",
@@ -158,7 +138,6 @@ object ExerciseGuides {
             "Kicking the weight up fast and letting it crash down.",
         ),
         "Calf Raise" to ExerciseGuide(
-            "calf_raise",
             listOf(
                 "Balls of your feet on the edge, heels hanging.",
                 "Lower your heels for a deep stretch and pause.",
@@ -167,7 +146,6 @@ object ExerciseGuides {
             "Short bouncy reps with no stretch or pause.",
         ),
         "Overhead Press" to ExerciseGuide(
-            "overhead_press",
             listOf(
                 "Bar on your front shoulders, grip just outside shoulders.",
                 "Squeeze glutes and abs so your ribs stay down.",
@@ -177,7 +155,6 @@ object ExerciseGuides {
             "Leaning back into a big arch to push the weight.",
         ),
         "Dumbbell Shoulder Press" to ExerciseGuide(
-            "dumbbell_shoulder_press",
             listOf(
                 "Sit with your back on an upright bench, dumbbells at ear height.",
                 "Press up until arms are straight, dumbbells close but not clanking.",
@@ -186,7 +163,6 @@ object ExerciseGuides {
             "Arching off the bench or stopping the reps halfway down.",
         ),
         "Lateral Raise" to ExerciseGuide(
-            "lateral_raise",
             listOf(
                 "Stand tall, light dumbbells at your sides, slight bend in the elbows.",
                 "Raise your arms out to the sides to shoulder height, leading with the elbows.",
@@ -195,7 +171,6 @@ object ExerciseGuides {
             "Going too heavy and swinging with your body or shrugging up.",
         ),
         "Bicep Curl" to ExerciseGuide(
-            "bicep_curl",
             listOf(
                 "Stand tall, elbows pinned at your sides, palms forward.",
                 "Curl up until the dumbbells reach your shoulders.",
@@ -204,7 +179,6 @@ object ExerciseGuides {
             "Swinging the torso or letting the elbows drift forward.",
         ),
         "Hammer Curl" to ExerciseGuide(
-            "hammer_curl",
             listOf(
                 "Palms face each other the whole time.",
                 "Elbows stay at your sides as you curl up.",
@@ -213,7 +187,6 @@ object ExerciseGuides {
             "Using momentum from your hips.",
         ),
         "Tricep Pushdown" to ExerciseGuide(
-            "tricep_pushdown",
             listOf(
                 "Stand close to the cable, elbows tucked at your sides.",
                 "Push down until your arms are straight, squeeze the triceps.",
@@ -222,7 +195,6 @@ object ExerciseGuides {
             "Elbows flaring out or leaning over the bar to push with body weight.",
         ),
         "Overhead Tricep Extension" to ExerciseGuide(
-            "overhead_tricep_extension",
             listOf(
                 "Face away from the cable (or hold one dumbbell overhead), elbows pointing forward.",
                 "Lower the weight behind your head for a deep stretch.",
@@ -231,7 +203,6 @@ object ExerciseGuides {
             "Elbows flaring wide or arching the lower back.",
         ),
         "Plank (reps = seconds)" to ExerciseGuide(
-            "plank",
             listOf(
                 "Forearms under your shoulders, body in a straight line.",
                 "Squeeze glutes and pull your belly button in.",
@@ -241,7 +212,6 @@ object ExerciseGuides {
             bodyweight = true, timed = true,
         ),
         "Hanging Leg Raise" to ExerciseGuide(
-            "hanging_leg_raise",
             listOf(
                 "Hang from the bar with straight arms, shoulders active.",
                 "Curl your pelvis up as you raise your legs (bent knees is easier).",
@@ -251,7 +221,6 @@ object ExerciseGuides {
             bodyweight = true,
         ),
         "Running" to ExerciseGuide(
-            "running",
             listOf(
                 "Stay relaxed and tall, arms swinging front to back.",
                 "Land under your hips with short, quick steps.",
@@ -260,7 +229,6 @@ object ExerciseGuides {
             "Overstriding and landing hard on your heels in front of you.",
         ),
         "Cycling" to ExerciseGuide(
-            "cycling",
             listOf(
                 "Seat height so your knee is slightly bent at the bottom of the pedal stroke.",
                 "Keep your upper body relaxed and your knees tracking straight.",
@@ -269,7 +237,6 @@ object ExerciseGuides {
             "A seat that's too low, which strains the knees.",
         ),
         "Rowing Machine" to ExerciseGuide(
-            "rowing_machine",
             listOf(
                 "Order on the way out: legs, then lean back slightly, then arms.",
                 "Order on the way back: arms, then body, then legs.",
@@ -278,7 +245,6 @@ object ExerciseGuides {
             "Pulling mostly with the arms or bending the knees before the handle passes them.",
         ),
         "Incline Walk" to ExerciseGuide(
-            "incline_walk",
             listOf(
                 "Set an incline of 5-12% and a brisk walking pace.",
                 "Stand tall and swing your arms naturally.",
@@ -287,7 +253,6 @@ object ExerciseGuides {
             "Hanging onto the handrails, which cancels most of the effort.",
         ),
         "Elliptical" to ExerciseGuide(
-            "elliptical",
             listOf(
                 "Stand tall with your weight through your heels.",
                 "Push and pull the handles to involve your upper body.",

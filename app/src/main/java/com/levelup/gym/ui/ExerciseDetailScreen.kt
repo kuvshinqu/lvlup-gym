@@ -29,6 +29,22 @@ import com.levelup.gym.data.ExerciseKind
 import com.levelup.gym.game.ExerciseGuides
 import com.levelup.gym.game.Skills
 import com.levelup.gym.game.UnitsFormat
+import com.levelup.gym.ui.figure.AnimatedHeroFigure
+import com.levelup.gym.ui.figure.ExerciseArt
+import com.levelup.gym.ui.figure.ExerciseArts
+import com.levelup.gym.ui.figure.FigurePalette
+import com.levelup.gym.ui.figure.HeroFigure
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 
 /** "How to" screen: start and finish photos, form cues and the most common mistake. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,7 +60,7 @@ fun ExerciseDetailScreen(vm: GymViewModel, exerciseId: Long, onBack: () -> Unit)
         TopAppBar(
             title = { Text(exercise?.name ?: "") },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
         )
         if (exercise != null) ExerciseDetailBody(exercise, guide, best, units)
     }
@@ -60,16 +76,17 @@ private fun ExerciseDetailBody(
         val skill = Skills.forGroup(exercise.muscleGroup)
 
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (guide != null) {
+            val art = ExerciseArts.forName(exercise.name)
+            if (art != null) {
                 item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            ExerciseImage(guide.startImage, exercise.muscleGroup, Modifier.aspectRatio(0.8f))
-                            Text("START", style = MaterialTheme.typography.labelSmall, color = GameColors.Muted)
-                        }
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            ExerciseImage(guide.finishImage, exercise.muscleGroup, Modifier.aspectRatio(0.8f))
-                            Text("FINISH", style = MaterialTheme.typography.labelSmall, color = GameColors.Muted)
+                    GameCard(accent = GameColors.Gold, ornate = true) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            AnimatedHeroFigure(art, Modifier.fillMaxWidth().aspectRatio(1.15f))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                PosePanel("A", if (art.hold) "Hold" else "Start", art, 0f, Modifier.weight(1f))
+                                if (!art.hold) PosePanel("B", "Finish", art, 1f, Modifier.weight(1f))
+                            }
+                            MuscleLegend(art)
                         }
                     }
                 }
@@ -95,7 +112,7 @@ private fun ExerciseDetailBody(
                 item {
                     GameCard {
                         Text(
-                            "This is your own exercise, so there are no photos or form notes for it yet.",
+                            "This is your own exercise, so there is no drawing or form notes for it yet.",
                             color = GameColors.Muted,
                         )
                     }
@@ -131,13 +148,49 @@ private fun ExerciseDetailBody(
                         )
                     }
                 }
-                item {
-                    Text(
-                        "Photos: Free Exercise DB (public domain).",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = GameColors.Muted,
-                    )
-                }
             }
         }
+}
+
+@Composable
+private fun PosePanel(letter: String, label: String, art: ExerciseArt, t: Float, modifier: Modifier) {
+    Column(
+        modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(GameColors.Background)
+            .border(1.dp, GameColors.Gold.copy(alpha = 0.25f), RoundedCornerShape(12.dp))
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Box(
+                Modifier.size(20.dp).clip(CircleShape).background(GameColors.Xp.copy(alpha = 0.18f))
+                    .border(1.dp, GameColors.Xp, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) { Text(letter, color = GameColors.Xp, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
+            Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, color = GameColors.Muted)
+        }
+        HeroFigure(art, Modifier.fillMaxWidth().aspectRatio(1f), t = t)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MuscleLegend(art: ExerciseArt) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        art.primary.forEach { MuscleChip(it.label, FigurePalette.musclePrimary) }
+        art.secondary.forEach { MuscleChip(it.label, FigurePalette.muscleSecondary.copy(alpha = 0.8f)) }
+    }
+}
+
+@Composable
+private fun MuscleChip(label: String, color: androidx.compose.ui.graphics.Color) {
+    Row(
+        Modifier.clip(RoundedCornerShape(50)).background(color.copy(alpha = 0.14f)).padding(horizontal = 10.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(Modifier.size(8.dp).clip(CircleShape).background(color))
+        Text(label, style = MaterialTheme.typography.labelMedium, color = color)
+    }
 }

@@ -110,7 +110,7 @@ fun WorkoutDetailScreen(vm: GymViewModel, workoutId: Long, onBack: () -> Unit) {
             actions = {
                 IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, "Delete workout") }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
         )
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             val bonus = workout?.bonusXp ?: 0
