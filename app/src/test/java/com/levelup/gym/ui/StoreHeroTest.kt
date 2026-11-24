@@ -38,6 +38,11 @@ class StoreHeroTest {
         "squat" to (ExerciseArts.forName("Squat")!! to 0.6f),
         "curl" to (ExerciseArts.forName("Bicep Curl")!! to 1f),
         "idle" to (ExerciseArts.idle to 0f),
+        "bench_a" to (ExerciseArts.forName("Bench Press")!! to 0f),
+        "bench_b" to (ExerciseArts.forName("Bench Press")!! to 1f),
+        "incline_a" to (ExerciseArts.forName("Incline Dumbbell Press")!! to 0f),
+        "pushup_b" to (ExerciseArts.forName("Push-up")!! to 1f),
+        "deadlift_a" to (ExerciseArts.forName("Deadlift")!! to 0f),
     )
 
     @Test fun heroes() {

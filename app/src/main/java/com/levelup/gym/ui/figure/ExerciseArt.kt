@@ -63,14 +63,15 @@ private val standing = Pose(hip = v(50, 51), torso = 0f, hand = v(52, 52), ankle
 object ExerciseArts {
     private val arts: Map<String, ExerciseArt> = mapOf(
         "Bench Press" to ExerciseArt(
-            start = Pose(hip = v(60, 61), torso = -90f, hand = v(33, 33), ankle = v(72, 91), elbowBend = -1, kneeBend = 1),
-            finish = Pose(hip = v(60, 61), torso = -90f, hand = v(38, 51), ankle = v(72, 91), elbowBend = -1, kneeBend = 1),
+            // Arms locked over the shoulders, then the bar comes down to the lower chest with the elbows dropping below the bench.
+            start = Pose(hip = v(60, 61), torso = -90f, hand = v(34, 33), ankle = v(77, 91), elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(60, 61), torso = -90f, hand = v(43, 55), ankle = v(77, 91), elbowBend = 1, kneeBend = -1),
             primary = setOf(CHEST), secondary = setOf(TRICEPS, SHOULDERS),
-            props = flatBench(16, 66) + Prop.Barbell(),
+            props = flatBench(16, 66) + Prop.Barbell(r = 6.5f),
         ),
         "Incline Dumbbell Press" to ExerciseArt(
-            start = Pose(hip = v(58, 64), torso = -55f, hand = v(40, 42), ankle = v(74, 91), elbowBend = -1, kneeBend = 1),
-            finish = Pose(hip = v(58, 64), torso = -55f, hand = v(37, 20), ankle = v(74, 91), elbowBend = -1, kneeBend = 1),
+            start = Pose(hip = v(58, 64), torso = -55f, hand = v(44, 45), ankle = v(76, 91), elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(58, 64), torso = -55f, hand = v(37, 20), ankle = v(76, 91), elbowBend = 1, kneeBend = -1),
             primary = setOf(CHEST), secondary = setOf(SHOULDERS, TRICEPS),
             props = listOf(
                 line(60, 69, 60, 92, 2.5), line(40, 69, 32, 92, 2.5),
@@ -81,7 +82,7 @@ object ExerciseArts {
         ),
         "Push-up" to ExerciseArt(
             start = Pose(hip = v(40.7, 73.9), torso = 66.9f, hand = v(68, 91), ankle = v(3, 90), foot = 150f, elbowBend = 1, kneeBend = -1),
-            finish = Pose(hip = v(43.7, 85.2), torso = 83.3f, hand = v(68, 91), ankle = v(3, 90), foot = 150f, elbowBend = 1, kneeBend = -1),
+            finish = Pose(hip = v(42.5, 81), torso = 79f, hand = v(68, 91), ankle = v(3, 90), foot = 150f, elbowBend = 1, kneeBend = -1),
             primary = setOf(CHEST), secondary = setOf(TRICEPS, SHOULDERS, CORE),
             trail = Anchor.SHOULDER,
         ),
@@ -111,7 +112,7 @@ object ExerciseArts {
             props = listOf(rect(22, 84, 26, 4, Material.LEATHER), line(76, 72, 76, 92, 3), Prop.Cable(Anchor.HAND, v(78, 66)), Prop.Disc(v(78, 66), 2.5f, Material.STEEL)),
         ),
         "Deadlift" to ExerciseArt(
-            start = Pose(hip = v(34, 70), torso = 55f, hand = v(56, 83), ankle = v(52, 91)),
+            start = Pose(hip = v(37, 60), torso = 76f, hand = v(58, 83), ankle = v(52, 91)),
             finish = Pose(hip = v(50, 51), torso = -2f, hand = v(53, 52), ankle = v(52, 91)),
             primary = setOf(BACK, GLUTES, HAMSTRINGS), secondary = setOf(QUADS, FOREARMS),
             props = listOf(Prop.Barbell()),
