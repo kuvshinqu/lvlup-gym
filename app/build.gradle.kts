@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -5,25 +7,49 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+/** Upload-key settings, read from keystore.properties (never committed). Missing file = unsigned release. */
+val releaseKeys: Properties? = rootProject.file("keystore.properties").takeIf { it.exists() }?.let { f ->
+    Properties().apply { f.inputStream().use { load(it) } }
+}
+
 android {
     namespace = "com.levelup.gym"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.levelup.gym"
+        // Permanent Play Store ID. Never change it after the first upload.
+        applicationId = "com.levelupgym.app"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 3
-        versionName = "0.3.0"
+        targetSdk = 36 // Google Play requires API 36 for new apps and updates since 31 Aug 2026
+        // Bump versionCode by 1 for every upload to Play; versionName is what users see.
+        versionCode = 4
+        versionName = "1.0.0"
     }
 
     signingConfigs {
-        // Kept in the repo so every build can update the app already on the phone.
+        // Kept in the repo so every debug build can update the test app already on the phone.
         getByName("debug") { storeFile = file("debug.keystore") }
+        // Upload key for Google Play. Its file and passwords live outside the repo (keystore.properties).
+        if (releaseKeys != null) {
+            create("release") {
+                storeFile = rootProject.file(releaseKeys.getProperty("storeFile"))
+                storePassword = releaseKeys.getProperty("storePassword")
+                keyAlias = releaseKeys.getProperty("keyAlias")
+                keyPassword = releaseKeys.getProperty("keyPassword")
+            }
+        }
     }
     buildTypes {
+        debug {
+            // Test builds install next to the Play version instead of replacing it.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (releaseKeys != null) signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

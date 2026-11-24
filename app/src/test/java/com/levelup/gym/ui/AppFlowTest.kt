@@ -21,7 +21,7 @@ import org.robolectric.annotation.GraphicsMode
 /** Drives the real app: start the first program day, log sets, finish, check history. */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w411dp-h891dp-xxhdpi")
+@Config(qualifiers = "w411dp-h822dp-xxhdpi")
 class AppFlowTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 

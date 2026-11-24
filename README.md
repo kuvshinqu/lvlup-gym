@@ -19,7 +19,7 @@ An Android gym tracker where you are a hero who levels up. Kotlin + Jetpack Comp
 - Hero level L→L+1 costs 100·L XP; skills cost 50·L
 
 ## Build
-Needs JDK 17+ and the Android SDK (platform 35).
+Needs JDK 17+ and the Android SDK (platform 36).
 
     ./gradlew assembleDebug          # APK in app/build/outputs/apk/debug/
     ./gradlew testDebugUnitTest      # rules tests + a click-through of the real app
@@ -34,3 +34,16 @@ All figures are drawn in code (`ui/figure/`): a small 2D rig where hands and fee
 
 ## Signing
 `app/debug.keystore` is the shared debug key, so a new build installs over the old one without losing data.
+The debug build installs as `com.levelupgym.app.debug`, so it sits next to the Play Store version.
+
+## Google Play release
+- App ID `com.levelupgym.app`, targetSdk 36. Bump `versionCode` (and `versionName`) in `app/build.gradle.kts` for every upload.
+- Create `keystore.properties` in the project root (never commit it, it is gitignored):
+
+      storeFile=/path/to/levelupgym-upload.jks
+      storePassword=...
+      keyAlias=upload
+      keyPassword=...
+
+- `./gradlew bundleRelease` writes the signed bundle to `app/build/outputs/bundle/release/app-release.aab`. Without `keystore.properties` the bundle is unsigned.
+- Release builds are shrunk with R8 (`proguard-rules.pro`). `StoreArtTest` renders artwork for the store listing.
