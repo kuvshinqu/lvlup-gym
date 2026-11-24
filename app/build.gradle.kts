@@ -13,10 +13,14 @@ android {
         applicationId = "com.levelup.gym"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
+    signingConfigs {
+        // Kept in the repo so every build can update the app already on the phone.
+        getByName("debug") { storeFile = file("debug.keystore") }
+    }
     buildTypes {
         release {
             isMinifyEnabled = false

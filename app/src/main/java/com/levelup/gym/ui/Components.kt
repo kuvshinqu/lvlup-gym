@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.levelup.gym.data.SetWithExercise
 import com.levelup.gym.data.ExerciseKind
 import com.levelup.gym.data.Units
+import com.levelup.gym.game.ExerciseGuides
 import com.levelup.gym.game.UnitsFormat
 
 @Composable
@@ -143,10 +144,15 @@ fun describeSet(s: SetWithExercise, units: Units): String =
             if (s.set.durationSec > 0) add(UnitsFormat.duration(s.set.durationSec))
             if (s.set.distanceM > 0) add(UnitsFormat.distance(s.set.distanceM, units))
         }.joinToString(" · ").ifEmpty { "Cardio" }
-    } else if (s.set.weightKg > 0) {
-        "${s.set.reps} × ${UnitsFormat.weight(s.set.weightKg, units)}"
     } else {
-        "${s.set.reps} reps"
+        val guide = ExerciseGuides.forName(s.exerciseName)
+        val amount = if (guide?.timed == true) "${s.set.reps} s" else "${s.set.reps}"
+        when {
+            s.set.weightKg > 0 && guide?.bodyweight == true -> "$amount × bodyweight + ${UnitsFormat.weight(s.set.weightKg, units)}"
+            s.set.weightKg > 0 -> "$amount × ${UnitsFormat.weight(s.set.weightKg, units)}"
+            guide?.bodyweight == true -> "$amount × bodyweight"
+            else -> "$amount reps"
+        }
     }
 
 @Composable

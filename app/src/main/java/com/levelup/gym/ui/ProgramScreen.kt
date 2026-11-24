@@ -19,10 +19,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.levelup.gym.game.StarterProgram
+import com.levelup.gym.game.ExerciseGuides
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 
 @Composable
-fun ProgramScreen(vm: GymViewModel, onOpenWorkout: () -> Unit) {
+fun ProgramScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenExercise: (Long) -> Unit) {
     val next by vm.nextPlanDay.collectAsStateWithLifecycle()
+    val exercises by vm.exercises.collectAsStateWithLifecycle()
     val active by vm.activeWorkout.collectAsStateWithLifecycle()
 
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -52,7 +59,20 @@ fun ProgramScreen(vm: GymViewModel, onOpenWorkout: () -> Unit) {
                         if (isNext) Text("NEXT", style = MaterialTheme.typography.labelSmall, color = GameColors.Xp)
                     }
                     day.exercises.forEach { ex ->
-                        Row {
+                        val entity = exercises.firstOrNull { it.name == ex.exerciseName }
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = entity != null) { entity?.let { onOpenExercise(it.id) } }
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            ExerciseImage(
+                                ExerciseGuides.forName(ex.exerciseName)?.startImage,
+                                entity?.muscleGroup ?: "",
+                                Modifier.size(40.dp),
+                            )
+                            Spacer(Modifier.width(10.dp))
                             Text(ex.exerciseName, modifier = Modifier.weight(1f))
                             Text("${ex.sets} × ${ex.reps}", fontWeight = FontWeight.Bold)
                         }
@@ -70,7 +90,11 @@ fun ProgramScreen(vm: GymViewModel, onOpenWorkout: () -> Unit) {
         }
         item {
             GameCard(accent = GameColors.Ember) {
-                Text("🔥  ${StarterProgram.CARDIO_TIP}", style = MaterialTheme.typography.bodyMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SkillIcon("Cardio", size = 36.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Text(StarterProgram.CARDIO_TIP, style = MaterialTheme.typography.bodyMedium)
+                }
             }
         }
     }

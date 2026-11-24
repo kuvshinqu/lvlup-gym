@@ -84,3 +84,16 @@ class CardioAndQuestTest {
         assertEquals("62.5 kg", UnitsFormat.weight(62.5, com.levelup.gym.data.Units.METRIC))
     }
 }
+
+class ExerciseGuideTest {
+    @Test fun everyStarterExerciseHasPhotosAndNotes() {
+        com.levelup.gym.data.DEFAULT_EXERCISES.forEach { seed ->
+            val guide = ExerciseGuides.forName(seed.name)
+            assertTrue("${seed.name} has no guide", guide != null)
+            assertTrue("${seed.name} has no cues", guide!!.cues.isNotEmpty() && guide.avoid.isNotBlank())
+            listOf(guide.startImage, guide.finishImage).forEach {
+                assertTrue("missing $it", java.io.File("src/main/assets/$it").exists())
+            }
+        }
+    }
+}

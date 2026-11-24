@@ -3,11 +3,12 @@
 An Android gym tracker where you are a hero who levels up. Kotlin + Jetpack Compose, data stored on the phone (Room/SQLite).
 
 ## What it does
-- **Hero**: hero level, rank title and XP bar, a weekly quest (4 workouts, Mon to Sun) and 7 skills that level up on their own: Shield Wall (chest), Grapple (back), Earthshaker (legs), Skybreaker (shoulders), Iron Grip (arms), Stone Core (core), Endurance (cardio).
+- **Hero** (drawn skill icons, no emoji): hero level, rank title and XP bar, a weekly quest (4 workouts, Mon to Sun) and 7 skills that level up on their own: Shield Wall (chest), Bowstring (back), Earthshaker (legs), Skybreaker (shoulders), Iron Grip (arms), Stone Core (core), Endurance (cardio).
 - **Program**: starter 4-day Upper/Lower split (Mon Upper A, Tue Lower A, Thu Upper B, Fri Lower B). Each day is a "quest" with objectives (sets × reps). The app suggests the next day in the rotation.
 - **Workout**: pick an exercise, log reps and weight (or minutes and distance for cardio), see XP per set, new-best badges, level-up popup.
 - **History**: finished workouts with sets, volume, cardio time and XP; open one to see every set, or delete it.
-- **Exercises**: 29 starter exercises (incl. 5 cardio); add your own and choose which skill it trains.
+- **Exercises**: 29 starter exercises (incl. 5 cardio), each with start/finish photos and short form notes (tap one for "How to"); add your own and choose which skill it trains.
+- **Body weight**: weigh-ins on the hero screen with the latest value and a 30-day trend line. Never affects XP. Bodyweight exercises (push-up, pull-up, plank, hanging leg raise) show "× bodyweight", plus any added weight.
 - **Settings**: hero name, kg/km or lb/mi. Data is always stored in kg and metres.
 
 ## XP rules (`app/src/main/java/com/levelup/gym/game/Leveling.kt`)
@@ -27,3 +28,9 @@ The click-through test (`AppFlowTest`) saves screenshots to `app/build/screensho
 
 ## Ready for more users
 Every exercise, workout and set belongs to a user (`users` table). v1 creates one hero; adding a user picker or accounts later doesn't need a data migration.
+
+## Credits
+Exercise photos: [Free Exercise DB](https://github.com/yuhonas/free-exercise-db), public domain (Unlicense).
+
+## Signing
+`app/debug.keystore` is the shared debug key, so a new build installs over the old one without losing data.

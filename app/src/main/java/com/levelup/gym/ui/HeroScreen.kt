@@ -40,6 +40,8 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
     val active by vm.activeWorkout.collectAsStateWithLifecycle()
     val next by vm.nextPlanDay.collectAsStateWithLifecycle()
     val units by vm.units.collectAsStateWithLifecycle()
+    val bodyWeight by vm.latestBodyWeight.collectAsStateWithLifecycle()
+    val bodyWeights by vm.bodyWeights30d.collectAsStateWithLifecycle()
 
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -127,12 +129,15 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
             }
         }
 
+        // Body weight
+        item { BodyWeightCard(bodyWeight, bodyWeights, units, onLog = vm::logBodyWeight) }
+
         // Skills
         item { SectionLabel("Skills") }
         items(skills, key = { it.skill.muscleGroup }) { sp ->
             GameCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(sp.skill.icon, fontSize = 26.sp, modifier = Modifier.width(36.dp))
+                    SkillIcon(sp.skill.muscleGroup, size = 44.dp)
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {

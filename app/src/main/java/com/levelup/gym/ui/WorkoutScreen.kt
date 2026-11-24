@@ -17,6 +17,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.foundation.layout.size
+import com.levelup.gym.game.ExerciseGuides
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -58,7 +61,7 @@ private fun String.toNumber(): Double? = replace(',', '.').trim().toDoubleOrNull
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit) {
+fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit, onOpenExercise: (Long) -> Unit) {
     val workout by vm.activeWorkout.collectAsStateWithLifecycle()
     val sets by vm.activeSets.collectAsStateWithLifecycle()
     val exercises by vm.exercises.collectAsStateWithLifecycle()
@@ -133,8 +136,22 @@ fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit) {
             item {
                 GameCard(accent = GameColors.Gold) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OutlinedButton(onClick = { pickerOpen = true }, modifier = Modifier.fillMaxWidth()) {
-                            Text(selected?.name ?: "Choose exercise")
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            if (selected != null) {
+                                ExerciseImage(
+                                    ExerciseGuides.forName(selected.name)?.startImage,
+                                    selected.muscleGroup,
+                                    Modifier.size(56.dp).clickable { onOpenExercise(selected.id) },
+                                )
+                            }
+                            OutlinedButton(onClick = { pickerOpen = true }, modifier = Modifier.weight(1f)) {
+                                Text(selected?.name ?: "Choose exercise")
+                            }
+                            if (selected != null) {
+                                IconButton(onClick = { onOpenExercise(selected.id) }) {
+                                    Icon(Icons.Filled.Info, "How to do ${selected.name}", tint = GameColors.Gold)
+                                }
+                            }
                         }
                         if (selected?.kind == ExerciseKind.CARDIO) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -168,8 +185,10 @@ fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit) {
                                     label = "Reps", value = reps, onValue = { reps = it },
                                     step = 1.0, keyboard = KeyboardType.Number, modifier = Modifier.weight(1f),
                                 )
+                                val bodyweight = selected?.let { ExerciseGuides.forName(it.name)?.bodyweight } == true
                                 Stepper(
-                                    label = "Weight (${UnitsFormat.weightUnit(units)})", value = weight, onValue = { weight = it },
+                                    label = (if (bodyweight) "Added weight" else "Weight") + " (${UnitsFormat.weightUnit(units)})",
+                                    value = weight, onValue = { weight = it },
                                     step = UnitsFormat.weightStep(units), keyboard = KeyboardType.Decimal, modifier = Modifier.weight(1f),
                                 )
                             }
@@ -185,11 +204,16 @@ fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit) {
                         }
                         if (selected != null) {
                             val skill = Skills.forGroup(selected.muscleGroup)
-                            Text(
-                                "${skill.icon} Trains ${skill.name}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = GameColors.Muted,
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                SkillIcon(selected.muscleGroup, size = 22.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "Trains ${skill.name}" +
+                                        if (ExerciseGuides.forName(selected.name)?.bodyweight == true) " · bodyweight exercise" else "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = GameColors.Muted,
+                                )
+                            }
                         }
                     }
                 }
@@ -211,7 +235,7 @@ fun WorkoutScreen(vm: GymViewModel, onClose: () -> Unit) {
                         },
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(if (complete) "✅" else "⚔️")
+                            ObjectiveMark(complete)
                             Spacer(Modifier.width(10.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(pe.exerciseName, fontWeight = FontWeight.Bold)
@@ -322,17 +346,21 @@ private fun ExercisePicker(
             LazyColumn(Modifier.heightIn(max = 420.dp)) {
                 exercises.groupBy { it.muscleGroup }.forEach { (group, list) ->
                     item(key = "h-$group") {
-                        val skill = Skills.forGroup(group)
-                        SectionLabel("${skill.icon} $group")
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                            SkillIcon(group, size = 22.dp)
+                            Spacer(Modifier.width(8.dp))
+                            SectionLabel(group)
+                        }
                     }
                     items(list, key = { it.id }) { ex ->
-                        Text(
-                            ex.name,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onPick(ex) }
-                                .padding(vertical = 12.dp),
-                        )
+                        Row(
+                            Modifier.fillMaxWidth().clickable { onPick(ex) }.padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            ExerciseImage(ExerciseGuides.forName(ex.name)?.startImage, ex.muscleGroup, Modifier.size(40.dp))
+                            Spacer(Modifier.width(12.dp))
+                            Text(ex.name)
+                        }
                     }
                 }
             }

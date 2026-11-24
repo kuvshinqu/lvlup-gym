@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.levelup.gym.GymApp
+import com.levelup.gym.data.BodyWeightEntity
 import com.levelup.gym.data.DEFAULT_EXERCISES
 import com.levelup.gym.data.ExerciseEntity
 import com.levelup.gym.data.SetEntity
@@ -107,6 +108,25 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
 
     val nextPlanDay: StateFlow<PlanDay> =
         uid.flatMapLatest { dao.lastPlanDayId(it) }.map { StarterProgram.nextDay(it) }.state(StarterProgram.days.first())
+
+    /** Weigh-ins from the last 30 days, oldest first, for the trend line. */
+    val bodyWeights30d: StateFlow<List<BodyWeightEntity>> =
+        uid.flatMapLatest { dao.bodyWeightsSince(it, System.currentTimeMillis() - 30L * 24 * 3600 * 1000) }.state(emptyList())
+
+    val latestBodyWeight: StateFlow<BodyWeightEntity?> =
+        uid.flatMapLatest { dao.latestBodyWeight(it) }.state(null)
+
+    fun logBodyWeight(weightKg: Double) {
+        val user = userId.value ?: return
+        if (weightKg <= 0) return
+        viewModelScope.launch { dao.insertBodyWeight(BodyWeightEntity(userId = user, weightKg = weightKg)) }
+    }
+
+    fun deleteBodyWeight(id: Long) {
+        viewModelScope.launch { dao.deleteBodyWeight(id) }
+    }
+
+    suspend fun bestWeight(exerciseId: Long): Double? = dao.bestWeight(exerciseId)
 
     val stats: StateFlow<UserStats> =
         uid.flatMapLatest { dao.stats(it) }.state(UserStats(0, 0, 0.0, 0))

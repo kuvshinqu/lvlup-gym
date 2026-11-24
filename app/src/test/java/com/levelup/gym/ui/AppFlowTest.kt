@@ -3,6 +3,7 @@ package com.levelup.gym.ui
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasScrollAction
@@ -29,6 +30,15 @@ class AppFlowTest {
 
     private fun waitFor(text: String, substring: Boolean = true) =
         compose.waitUntil(5_000) { compose.onAllNodesWithText(text, substring = substring).fetchSemanticsNodes().isNotEmpty() }
+
+    /**
+     * Robolectric can't settle after closing a dialog whose text field has focus,
+     * so the dialog is checked once with a screenshot and the weigh-ins go through the view model.
+     */
+    private fun logBodyWeight(value: String) {
+        val vm = androidx.lifecycle.ViewModelProvider(compose.activity)[GymViewModel::class.java]
+        compose.runOnUiThread { vm.logBodyWeight(value.toDouble()) }
+    }
 
     @Test fun fullQuestFlow() {
         waitFor("Start Upper A")
@@ -71,5 +81,32 @@ class AppFlowTest {
         compose.onNodeWithText("Exercises").performClick()
         waitFor("Add exercise")
         shot("7_exercises")
+
+        // How-to screen
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Pull-up"))
+        compose.onNodeWithText("Pull-up").performClick()
+        waitFor("How to do it")
+        compose.mainClock.advanceTimeBy(500)
+        compose.waitForIdle()
+        shot("8_how_to")
+        compose.onNodeWithContentDescription("Back").performClick()
+
+        // Body weight on the hero screen
+        compose.onNodeWithText("Hero").performClick()
+        waitFor("Log body weight")
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Log body weight"))
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithText("Log body weight").performClick()
+        compose.mainClock.advanceTimeBy(500)
+        shot("9a_weigh_in")
+        compose.onNodeWithText("Cancel").performClick()
+        compose.mainClock.advanceTimeBy(500)
+        compose.mainClock.autoAdvance = true
+        logBodyWeight("81.2")
+        waitFor("81.2 kg")
+        logBodyWeight("80.6")
+        waitFor("in 30 days")
+        compose.waitForIdle()
+        shot("9b_body_weight")
     }
 }

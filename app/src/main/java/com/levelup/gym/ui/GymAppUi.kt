@@ -114,10 +114,20 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
                     onOpenSettings = { nav.navigate("settings") },
                 )
             }
-            composable("program") { ProgramScreen(vm, onOpenWorkout = { nav.navigate("workout") }) }
+            composable("program") {
+                ProgramScreen(vm, onOpenWorkout = { nav.navigate("workout") }, onOpenExercise = { nav.navigate("exercise/$it") })
+            }
             composable("history") { HistoryScreen(vm, onOpen = { nav.navigate("history/$it") }) }
-            composable("exercises") { ExercisesScreen(vm) }
-            composable("workout") { WorkoutScreen(vm, onClose = { nav.popBackStack() }) }
+            composable("exercises") { ExercisesScreen(vm, onOpenExercise = { nav.navigate("exercise/$it") }) }
+            composable("workout") {
+                WorkoutScreen(vm, onClose = { nav.popBackStack() }, onOpenExercise = { nav.navigate("exercise/$it") })
+            }
+            composable(
+                "exercise/{id}",
+                arguments = listOf(navArgument("id") { type = NavType.LongType }),
+            ) { entry ->
+                ExerciseDetailScreen(vm, entry.arguments?.getLong("id") ?: 0L, onBack = { nav.popBackStack() })
+            }
             composable("settings") { SettingsScreen(vm, onBack = { nav.popBackStack() }) }
             composable(
                 "history/{id}",

@@ -30,10 +30,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.levelup.gym.data.ExerciseKind
 import com.levelup.gym.data.MUSCLE_GROUPS
 import com.levelup.gym.game.Skills
+import com.levelup.gym.game.ExerciseGuides
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ExercisesScreen(vm: GymViewModel) {
+fun ExercisesScreen(vm: GymViewModel, onOpenExercise: (Long) -> Unit) {
     val exercises by vm.exercises.collectAsStateWithLifecycle()
     var name by rememberSaveable { mutableStateOf("") }
     var group by rememberSaveable { mutableStateOf("Chest") }
@@ -59,7 +65,8 @@ fun ExercisesScreen(vm: GymViewModel) {
                             FilterChip(
                                 selected = g == group,
                                 onClick = { group = g },
-                                label = { Text("${Skills.forGroup(g).icon} $g") },
+                                label = { Text(g) },
+                                leadingIcon = { SkillIcon(g, size = 18.dp) },
                             )
                         }
                     }
@@ -83,11 +90,27 @@ fun ExercisesScreen(vm: GymViewModel) {
         exercises.groupBy { it.muscleGroup }.forEach { (g, list) ->
             item(key = "h-$g") {
                 val skill = Skills.forGroup(g)
-                SectionLabel("${skill.icon} $g · ${skill.name}")
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                    SkillIcon(g, size = 26.dp)
+                    Spacer(Modifier.width(10.dp))
+                    SectionLabel("$g · ${skill.name}")
+                }
             }
             items(list, key = { it.id }) { ex ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(ex.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                Row(
+                    Modifier.fillMaxWidth().clickable { onOpenExercise(ex.id) },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ExerciseImage(ExerciseGuides.forName(ex.name)?.startImage, ex.muscleGroup, Modifier.size(48.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(ex.name, style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            if (ExerciseGuides.forName(ex.name) != null) "Tap for how to" else "Your exercise",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = GameColors.Muted,
+                        )
+                    }
                     IconButton(onClick = { vm.deleteExercise(ex) }) {
                         Icon(Icons.Filled.Delete, "Delete ${ex.name}", tint = GameColors.Muted)
                     }

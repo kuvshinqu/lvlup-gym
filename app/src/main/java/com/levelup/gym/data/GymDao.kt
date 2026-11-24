@@ -121,4 +121,17 @@ interface GymDao {
            GROUP BY w.id ORDER BY w.startedAt DESC"""
     )
     fun history(userId: Long): Flow<List<WorkoutSummary>>
+
+    // Body weight
+    @Insert
+    suspend fun insertBodyWeight(entry: BodyWeightEntity): Long
+
+    @Query("DELETE FROM body_weights WHERE id = :id")
+    suspend fun deleteBodyWeight(id: Long)
+
+    @Query("SELECT * FROM body_weights WHERE userId = :userId AND loggedAt >= :since ORDER BY loggedAt")
+    fun bodyWeightsSince(userId: Long, since: Long): Flow<List<BodyWeightEntity>>
+
+    @Query("SELECT * FROM body_weights WHERE userId = :userId ORDER BY loggedAt DESC LIMIT 1")
+    fun latestBodyWeight(userId: Long): Flow<BodyWeightEntity?>
 }

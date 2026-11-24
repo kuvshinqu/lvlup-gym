@@ -104,3 +104,16 @@ data class SkillXp(
     val muscleGroup: String,
     val xp: Int,
 )
+
+/** Body weight weigh-ins. Shown on the hero screen; never affects XP. */
+@Entity(
+    tableName = "body_weights",
+    foreignKeys = [ForeignKey(UserEntity::class, ["id"], ["userId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("userId")],
+)
+data class BodyWeightEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val userId: Long,
+    val weightKg: Double,
+    val loggedAt: Long = System.currentTimeMillis(),
+)
