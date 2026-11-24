@@ -6,7 +6,10 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
+import com.levelup.gym.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
@@ -43,13 +46,35 @@ private val scheme = darkColorScheme(
     error = Color(0xFFFF6B6B),
 )
 
+/** Modern type: Sora for titles and numbers, Inter for everything else (both OFL, bundled). */
+@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
+object Fonts {
+    private fun family(res: Int, vararg weights: Int) = FontFamily(
+        weights.map { w ->
+            Font(res, FontWeight(w), variationSettings = FontVariation.Settings(FontVariation.weight(w)))
+        }
+    )
+    val Display = family(R.font.sora, 400, 600, 700, 800)
+    val Body = family(R.font.inter, 400, 500, 600, 700)
+}
+
 private val base = Typography()
-private val typography = base.copy(
-    headlineLarge = base.headlineLarge.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Black),
-    headlineMedium = base.headlineMedium.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Black),
-    titleLarge = base.titleLarge.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold),
-    titleMedium = base.titleMedium.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold),
-    labelSmall = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp, letterSpacing = 1.sp),
+private val typography = Typography(
+    displayLarge = base.displayLarge.copy(fontFamily = Fonts.Display, fontWeight = FontWeight.ExtraBold),
+    displayMedium = base.displayMedium.copy(fontFamily = Fonts.Display, fontWeight = FontWeight.ExtraBold),
+    displaySmall = base.displaySmall.copy(fontFamily = Fonts.Display, fontWeight = FontWeight.Bold),
+    headlineLarge = base.headlineLarge.copy(fontFamily = Fonts.Display, fontWeight = FontWeight.ExtraBold),
+    headlineMedium = base.headlineMedium.copy(fontFamily = Fonts.Display, fontWeight = FontWeight.ExtraBold),
+    headlineSmall = base.headlineSmall.copy(fontFamily = Fonts.Display, fontWeight = FontWeight.Bold),
+    titleLarge = base.titleLarge.copy(fontFamily = Fonts.Display, fontWeight = FontWeight.Bold),
+    titleMedium = base.titleMedium.copy(fontFamily = Fonts.Display, fontWeight = FontWeight.SemiBold),
+    titleSmall = base.titleSmall.copy(fontFamily = Fonts.Display, fontWeight = FontWeight.SemiBold),
+    bodyLarge = base.bodyLarge.copy(fontFamily = Fonts.Body),
+    bodyMedium = base.bodyMedium.copy(fontFamily = Fonts.Body),
+    bodySmall = base.bodySmall.copy(fontFamily = Fonts.Body),
+    labelLarge = base.labelLarge.copy(fontFamily = Fonts.Body, fontWeight = FontWeight.SemiBold),
+    labelMedium = base.labelMedium.copy(fontFamily = Fonts.Body, fontWeight = FontWeight.SemiBold),
+    labelSmall = TextStyle(fontFamily = Fonts.Body, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, letterSpacing = 1.2.sp),
 )
 
 @Composable

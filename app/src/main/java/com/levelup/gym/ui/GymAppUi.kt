@@ -1,5 +1,10 @@
 package com.levelup.gym.ui
 
+import com.levelup.gym.R
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -51,13 +56,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 
-private data class Tab(val route: String, val label: String, val icon: ImageVector)
+private data class Tab(val route: String, val label: String, @DrawableRes val icon: Int)
 
 private val tabs = listOf(
-    Tab("hero", "Hero", Icons.Filled.Face),
-    Tab("program", "Quests", Icons.Filled.DateRange),
-    Tab("history", "Chronicle", Icons.AutoMirrored.Filled.List),
-    Tab("exercises", "Armory", Icons.Filled.Star),
+    Tab("hero", "Hero", R.drawable.ic_hero_helmet),
+    Tab("program", "Quests", R.drawable.ic_quest_scroll),
+    Tab("history", "Chronicle", R.drawable.ic_campaign_map),
+    Tab("exercises", "Armory", R.drawable.ic_mission_swords),
 )
 
 @Composable
@@ -121,7 +126,12 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
                                     restoreState = true
                                 }
                             },
-                            icon = { Icon(tab.icon, contentDescription = null) },
+                            icon = {
+                                androidx.compose.foundation.Image(
+                                    painterResource(tab.icon), contentDescription = null,
+                                    modifier = Modifier.size(28.dp).alpha(if (route == tab.route) 1f else 0.55f),
+                                )
+                            },
                             label = { Text(tab.label) },
                             colors = NavigationBarItemDefaults.colors(
                                 indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
@@ -174,7 +184,7 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
             title = {
                 Text(
                     "LEVEL UP!", modifier = Modifier.fillMaxWidth(), color = GameColors.Gold, textAlign = TextAlign.Center,
-                    fontFamily = FontFamily.Serif, fontWeight = FontWeight.Black,
+                    fontFamily = Fonts.Display, fontWeight = FontWeight.Black,
                 )
             },
             text = {

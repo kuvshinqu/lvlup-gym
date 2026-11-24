@@ -1,5 +1,8 @@
 package com.levelup.gym.ui
 
+import com.levelup.gym.R
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -52,8 +55,8 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("HERO'S JOURNAL", style = MaterialTheme.typography.labelSmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif, color = GameColors.Gold.copy(alpha = 0.8f), modifier = Modifier.weight(1f))
-                IconButton(onClick = onOpenSettings) { Icon(Icons.Filled.Settings, "Settings", tint = GameColors.Muted) }
+                Text("HERO'S JOURNAL", style = MaterialTheme.typography.labelSmall, fontFamily = Fonts.Display, color = GameColors.Gold.copy(alpha = 0.8f), modifier = Modifier.weight(1f))
+                IconButton(onClick = onOpenSettings) { Icon(painterResource(R.drawable.ic_settings_key), "Settings", tint = Color.Unspecified, modifier = Modifier.size(26.dp)) }
             }
         }
 
@@ -112,6 +115,8 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
             GameCard(accent = GameColors.Arcane) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        MedievalIcon(R.drawable.ic_quest_scroll, 26.dp)
+                        Spacer(Modifier.width(8.dp))
                         Text("Weekly quest", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                         Text(
                             "+${Leveling.WEEKLY_QUEST_XP} XP",

@@ -1,5 +1,11 @@
 package com.levelup.gym.ui
 
+import com.levelup.gym.R
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.Image
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -33,85 +39,33 @@ fun skillColor(muscleGroup: String): Color = when (muscleGroup) {
     else -> Color(0xFFB0BEC5)
 }
 
-/** A round sigil with a simple line drawing for each skill. No emoji. */
+/** Drawable for a muscle group's skill, from the medieval icon set. */
+@DrawableRes
+fun skillIconRes(muscleGroup: String): Int = when (muscleGroup) {
+    "Chest" -> R.drawable.ic_guard_shield
+    "Back" -> R.drawable.ic_pull_bow
+    "Legs" -> R.drawable.ic_stride_boot
+    "Shoulders" -> R.drawable.ic_might_sword
+    "Arms" -> R.drawable.ic_grip_hammer
+    "Core" -> R.drawable.ic_balance_scales
+    "Cardio" -> R.drawable.ic_stamina_flask
+    else -> R.drawable.ic_xp_gem
+}
+
+/** The skill's medieval icon on a dark stone tile, rimmed in the skill's colour. No emoji. */
 @Composable
 fun SkillIcon(muscleGroup: String, size: Dp = 40.dp, modifier: Modifier = Modifier) {
     val color = skillColor(muscleGroup)
+    val shape = RoundedCornerShape(size * 0.24f)
     Box(
         modifier
             .size(size)
-            .clip(CircleShape)
-            .background(color.copy(alpha = 0.14f))
-            .border(1.5.dp, color.copy(alpha = 0.7f), CircleShape),
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(Color(0xFF2E2A26), Color(0xFF1C1A18))))
+            .border(1.dp, color.copy(alpha = 0.55f), shape),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(Modifier.size(size).padding(size * 0.22f)) { drawSigil(muscleGroup, color) }
-    }
-}
-
-private fun DrawScope.drawSigil(group: String, color: Color) {
-    val u = size.minDimension / 24f // draw on a 24x24 grid
-    fun p(x: Float, y: Float) = Offset(x * u, y * u)
-    val stroke = Stroke(width = 2.2f * u, cap = StrokeCap.Round, join = StrokeJoin.Round)
-    fun path(vararg pts: Pair<Float, Float>, close: Boolean = false) = Path().apply {
-        pts.forEachIndexed { i, (x, y) -> if (i == 0) moveTo(x * u, y * u) else lineTo(x * u, y * u) }
-        if (close) close()
-    }
-    when (group) {
-        "Chest" -> { // shield
-            val shield = Path().apply {
-                moveTo(12 * u, 2 * u); lineTo(21 * u, 5 * u); lineTo(20 * u, 13 * u)
-                quadraticTo(18 * u, 19 * u, 12 * u, 22 * u)
-                quadraticTo(6 * u, 19 * u, 4 * u, 13 * u); lineTo(3 * u, 5 * u); close()
-            }
-            drawPath(shield, color.copy(alpha = 0.25f))
-            drawPath(shield, color, style = stroke)
-            drawLine(color, p(12f, 6f), p(12f, 18f), stroke.width, StrokeCap.Round)
-        }
-        "Back" -> { // bow and arrow
-            drawArc(color, 90f, 180f, false, p(4f, 2f), Size(14 * u, 20 * u), style = stroke)
-            drawLine(color, p(11f, 2f), p(11f, 22f), 1.4f * u)
-            drawLine(color, p(5f, 12f), p(22f, 12f), stroke.width, StrokeCap.Round)
-            drawPath(path(18f to 8.5f, 22f to 12f, 18f to 15.5f), color, style = stroke)
-        }
-        "Legs" -> { // mountains
-            drawPath(path(1f to 21f, 9f to 6f, 14f to 15f, 17f to 10f, 23f to 21f, close = true), color.copy(alpha = 0.25f))
-            drawPath(path(1f to 21f, 9f to 6f, 14f to 15f, 17f to 10f, 23f to 21f, close = true), color, style = stroke)
-        }
-        "Shoulders" -> { // lightning bolt
-            val bolt = path(14f to 1f, 4f to 14f, 11f to 14f, 9f to 23f, 20f to 9f, 13f to 9f, close = true)
-            drawPath(bolt, color.copy(alpha = 0.25f))
-            drawPath(bolt, color, style = stroke)
-        }
-        "Arms" -> { // dumbbell
-            drawLine(color, p(6f, 12f), p(18f, 12f), stroke.width, StrokeCap.Round)
-            drawRoundRect(color, p(2f, 6f), Size(4 * u, 12 * u), androidx.compose.ui.geometry.CornerRadius(u, u))
-            drawRoundRect(color, p(18f, 6f), Size(4 * u, 12 * u), androidx.compose.ui.geometry.CornerRadius(u, u))
-        }
-        "Core" -> { // hexagon stone
-            val hex = path(12f to 2f, 21f to 7f, 21f to 17f, 12f to 22f, 3f to 17f, 3f to 7f, close = true)
-            drawPath(hex, color.copy(alpha = 0.25f))
-            drawPath(hex, color, style = stroke)
-            drawPath(path(3f to 7f, 12f to 12f, 21f to 7f), color, style = stroke)
-            drawLine(color, p(12f, 12f), p(12f, 22f), stroke.width, StrokeCap.Round)
-        }
-        "Cardio" -> { // heart
-            val heart = Path().apply {
-                moveTo(12 * u, 21 * u)
-                cubicTo(2 * u, 14 * u, 1 * u, 7 * u, 6.5f * u, 4 * u)
-                cubicTo(9.5f * u, 2.5f * u, 12 * u, 5 * u, 12 * u, 7 * u)
-                cubicTo(12 * u, 5 * u, 14.5f * u, 2.5f * u, 17.5f * u, 4 * u)
-                cubicTo(23 * u, 7 * u, 22 * u, 14 * u, 12 * u, 21 * u)
-                close()
-            }
-            drawPath(heart, color.copy(alpha = 0.25f))
-            drawPath(heart, color, style = stroke)
-        }
-        else -> { // four-point star
-            val star = path(12f to 2f, 14.5f to 9.5f, 22f to 12f, 14.5f to 14.5f, 12f to 22f, 9.5f to 14.5f, 2f to 12f, 9.5f to 9.5f, close = true)
-            drawPath(star, color.copy(alpha = 0.25f))
-            drawPath(star, color, style = stroke)
-        }
+        Image(painterResource(skillIconRes(muscleGroup)), contentDescription = null, modifier = Modifier.size(size * 0.8f))
     }
 }
 

@@ -1,5 +1,10 @@
 package com.levelup.gym.ui
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import com.levelup.gym.R
+import androidx.compose.ui.res.painterResource
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -120,7 +125,7 @@ fun LevelBadge(level: Int, size: Dp = 64.dp, color: Color = GameColors.Gold) {
                 "$level",
                 fontSize = (size.value * 0.36f).sp,
                 fontWeight = FontWeight.Black,
-                fontFamily = FontFamily.Serif,
+                fontFamily = Fonts.Display,
                 color = color,
                 lineHeight = (size.value * 0.38f).sp,
             )
@@ -179,7 +184,7 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
         Text(
             text.uppercase(),
             style = MaterialTheme.typography.labelSmall,
-            fontFamily = FontFamily.Serif,
+            fontFamily = Fonts.Display,
             fontWeight = FontWeight.Bold,
             color = GameColors.Gold.copy(alpha = 0.85f),
             modifier = Modifier.padding(horizontal = 10.dp),
@@ -226,7 +231,7 @@ fun RpgButton(
         Text(
             text,
             color = if (enabled) Color(0xFF231A00) else GameColors.Muted,
-            fontFamily = FontFamily.Serif,
+            fontFamily = Fonts.Display,
             fontWeight = FontWeight.Black,
             fontSize = 16.sp,
             letterSpacing = 0.5.sp,
@@ -251,16 +256,23 @@ fun StatBox(value: String, label: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun XpPill(xp: Int, modifier: Modifier = Modifier) {
-    Text(
-        "+$xp XP",
-        modifier = modifier
+    Row(
+        modifier
             .clip(RoundedCornerShape(50))
             .background(GameColors.Xp.copy(alpha = 0.15f))
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-        color = GameColors.Xp,
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.Bold,
-    )
+            .padding(start = 4.dp, end = 8.dp, top = 2.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MedievalIcon(R.drawable.ic_xp_gem, 16.dp)
+        Spacer(Modifier.width(3.dp))
+        Text("+$xp XP", color = GameColors.Xp, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+    }
+}
+
+/** One of the full-colour medieval icons from res/drawable (ic_*), drawn as-is. */
+@Composable
+fun MedievalIcon(@DrawableRes res: Int, size: Dp, modifier: Modifier = Modifier, description: String? = null) {
+    androidx.compose.foundation.Image(painterResource(res), description, modifier.size(size))
 }
 
 /** "8 × 60 kg" for strength, "30 min · 5 km" for cardio. */
@@ -301,6 +313,7 @@ fun SetRow(
         )
         Text(describeSet(set, units), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         if (set.set.isPersonalRecord) {
+            MedievalIcon(R.drawable.ic_breakthrough_chalice, 20.dp, description = "New best")
             Text("NEW BEST", style = MaterialTheme.typography.labelSmall, color = GameColors.Gold)
         }
         XpPill(set.set.xp)

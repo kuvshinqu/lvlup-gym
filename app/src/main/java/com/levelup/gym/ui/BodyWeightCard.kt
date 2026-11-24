@@ -1,5 +1,8 @@
 package com.levelup.gym.ui
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import com.levelup.gym.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -52,6 +55,8 @@ fun BodyWeightCard(
     GameCard {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                MedievalIcon(R.drawable.ic_bodyweight_anvil, 26.dp)
+                Spacer(Modifier.width(8.dp))
                 Text("Body weight", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 if (latest != null) {
                     Text(
