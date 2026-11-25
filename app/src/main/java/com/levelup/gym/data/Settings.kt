@@ -46,10 +46,20 @@ class Settings(context: Context) {
         _quizDone.value = true
     }
 
+    private val _workoutDraft = MutableStateFlow(prefs.getString(KEY_DRAFT, null))
+    /** The rows of the workout in progress, as JSON (see game/WorkoutDraft). */
+    val workoutDraftJson: StateFlow<String?> = _workoutDraft
+
+    fun setWorkoutDraftJson(json: String?) {
+        prefs.edit().apply { if (json == null) remove(KEY_DRAFT) else putString(KEY_DRAFT, json) }.apply()
+        _workoutDraft.value = json
+    }
+
     private companion object {
         const val KEY_UNITS = "units"
         const val KEY_PROGRAM = "program_id"
         const val KEY_CUSTOM = "custom_programs"
         const val KEY_QUIZ = "quiz_done"
+        const val KEY_DRAFT = "workout_draft"
     }
 }

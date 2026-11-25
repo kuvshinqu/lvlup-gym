@@ -109,7 +109,8 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onBackground,
         snackbarHost = {
-            SnackbarHost(snackbar) { data ->
+            // On the workout screen, toasts sit above the Log next set bar so they never cover it.
+            SnackbarHost(snackbar, Modifier.padding(bottom = if (route == "workout") 84.dp else 0.dp)) { data ->
                 Box(
                     Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth()
                         .drawBehind { chunkyBlock(GameColors.Parchment, 14.dp.toPx(), shadow = 3.dp.toPx(), lip = 3.dp.toPx(), gloss = 0f) }
@@ -137,6 +138,7 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
                     vm,
                     onOpenWorkout = { nav.navigate("workout") },
                     onOpenSettings = { nav.navigate("settings") },
+                    onOpenBadges = { nav.navigate("badges") },
                 )
             }
             composable("program") {
@@ -152,6 +154,7 @@ fun GymAppUi(vm: GymViewModel = viewModel()) {
                 )
             }
             composable("treasury") { TreasuryScreen(vm) }
+            composable("badges") { BadgesScreen(vm, onBack = { nav.popBackStack() }) }
             composable("quiz") { QuizScreen(vm, onDone = { nav.popBackStack() }) }
             composable("library") { LibraryScreen(vm, onBack = { nav.popBackStack() }) }
             composable(

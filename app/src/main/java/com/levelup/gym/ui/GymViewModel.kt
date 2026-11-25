@@ -31,6 +31,17 @@ import com.levelup.gym.game.Slot
 import com.levelup.gym.data.ChestEntity
 import com.levelup.gym.data.EquippedEntity
 import com.levelup.gym.ui.figure.HeroLook
+import com.levelup.gym.game.HistoryExport
+import com.levelup.gym.game.Badge
+import com.levelup.gym.game.Badges
+import com.levelup.gym.game.Deeds
+import com.levelup.gym.game.Streak
+import com.levelup.gym.data.BadgeEntity
+import com.levelup.gym.data.ShieldEntity
+import java.time.Instant
+import com.levelup.gym.game.WorkoutDraft
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
@@ -92,6 +103,8 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
                 UserEntity(id = id, name = "Hero")
             }
             userId.value = user.id
+            // Rest days pass while the app is closed, so streak milestones can be reached on opening it.
+            checkBadges()
         }
     }
 
@@ -188,18 +201,20 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
 
     val treasury: StateFlow<Treasury> =
         uid.flatMapLatest { user ->
-            kotlinx.coroutines.flow.combine(dao.chests(user), dao.equipped(user)) { chests, worn -> buildTreasury(chests, worn) }
+            kotlinx.coroutines.flow.combine(dao.chests(user), dao.equipped(user), dao.shields(user)) { chests, worn, shields ->
+                buildTreasury(chests, worn, shields.sumOf { it.cost })
+            }
         }.state(Treasury())
 
     /** The hero's colours from the gear they wear. */
     val heroLook: StateFlow<HeroLook> = treasury.map { GearLooks.lookFor(it.equipped) }.state(HeroLook.Default)
 
-    private fun buildTreasury(chests: List<ChestEntity>, worn: List<EquippedEntity>): Treasury {
+    private fun buildTreasury(chests: List<ChestEntity>, worn: List<EquippedEntity>, spentOnShields: Int): Treasury {
         val opened = chests.filter { it.openedAt != null }
         val owned = opened.filter { !it.duplicate }.mapNotNull { Loot.gear(it.itemKey) }.distinctBy { it.key }
             .sortedWith(compareBy<Gear>({ it.slot.ordinal }, { -it.rarity.ordinal }))
         val earned = opened.filter { it.duplicate }.sumOf { Loot.gear(it.itemKey)?.rarity?.salvageGold ?: 0 }
-        val gold = earned - chests.sumOf { it.cost }
+        val gold = earned - chests.sumOf { it.cost } - spentOnShields
         val equipped = worn.mapNotNull { e -> Loot.gear(e.itemKey)?.let { g -> g.slot to g } }.toMap()
         return Treasury(chests.filter { it.openedAt == null }, opened, owned, equipped, gold)
     }
@@ -239,6 +254,74 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // ---------------------------------------------------------------- Streak and badges
+
+    private fun programNow(): Program =
+        (Programs.builtIn + customPrograms.value).firstOrNull { it.id == settings.programId.value } ?: Programs.default
+
+    private fun streakOf(starts: List<Long>, shields: List<ShieldEntity>, program: Program): Streak.State {
+        val zone = ZoneId.systemDefault()
+        return Streak.compute(
+            starts.map { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }.toSet(),
+            shields.map { Instant.ofEpochMilli(it.boughtAt).atZone(zone).toLocalDate() },
+            Streak.restDaysAllowed(program.daysPerWeek),
+        )
+    }
+
+    val streak: StateFlow<Streak.State> =
+        uid.flatMapLatest { user ->
+            kotlinx.coroutines.flow.combine(dao.finishedStarts(user), dao.shields(user), activeProgram) { starts, shields, program ->
+                streakOf(starts, shields, program)
+            }
+        }.state(Streak.State())
+
+    private fun deedsOf(stats: UserStats, records: Int, totalXp: Int, starts: List<Long>, longestStreak: Int): Deeds {
+        val zone = ZoneId.systemDefault()
+        val hours = starts.map { Instant.ofEpochMilli(it).atZone(zone).hour }
+        return Deeds(
+            longestStreak = longestStreak, workouts = stats.workoutCount, records = records,
+            level = Leveling.levelFor(totalXp), volumeKg = stats.volumeKg, cardioSec = stats.cardioSec,
+            earlyStarts = hours.count { it in 4 until Badges.EARLY_HOUR },
+            lateStarts = hours.count { it >= Badges.LATE_HOUR || it < 4 },
+        )
+    }
+
+    data class BadgeProgress(val badge: Badge, val earnedAt: Long?, val value: Int) {
+        val earned: Boolean get() = earnedAt != null
+    }
+
+    val badges: StateFlow<List<BadgeProgress>> =
+        uid.flatMapLatest { user ->
+            val deeds = kotlinx.coroutines.flow.combine(
+                dao.stats(user), dao.recordCount(user), dao.totalXp(user), dao.finishedStarts(user), streak,
+            ) { stats, records, xp, starts, st -> deedsOf(stats, records, xp, starts, st.longestEver) }
+            kotlinx.coroutines.flow.combine(dao.badges(user), deeds) { earned, d ->
+                val at = earned.associate { it.badgeKey to it.earnedAt }
+                Badges.all.map { BadgeProgress(it, at[it.key], d.value(it.kind)) }
+            }
+        }.state(Badges.all.map { BadgeProgress(it, null, 0) })
+
+    /** Hands out any badge the hero has newly earned, each with a chest of its tier. */
+    private suspend fun checkBadges() {
+        val user = userId.value ?: return
+        val starts = dao.finishedStarts(user).first()
+        val st = streakOf(starts, dao.shields(user).first(), programNow())
+        val deeds = deedsOf(dao.stats(user).first(), dao.recordCount(user).first(), dao.totalXp(user).first(), starts, st.longestEver)
+        val have = dao.badges(user).first().map { it.badgeKey }.toSet()
+        Badges.earned(deeds).filter { it.key !in have }.forEach { b ->
+            if (dao.insertBadge(BadgeEntity(user, b.key)) != -1L) dropChest(b.tier.chest, "badge", "Badge earned: ${b.name}")
+        }
+    }
+
+    fun buyShield() {
+        val user = userId.value ?: return
+        viewModelScope.launch {
+            if (treasury.value.gold < Streak.SHIELD_PRICE || streak.value.shields >= Streak.MAX_SHIELDS) return@launch
+            dao.insertShield(ShieldEntity(userId = user, cost = Streak.SHIELD_PRICE))
+            _events.emit(GameEvent.Message("Streak shield forged. It guards one missed day."))
+        }
+    }
+
     /** Weigh-ins from the last 30 days, oldest first, for the trend line. */
     val bodyWeights30d: StateFlow<List<BodyWeightEntity>> =
         uid.flatMapLatest { dao.bodyWeightsSince(it, System.currentTimeMillis() - 30L * 24 * 3600 * 1000) }.state(emptyList())
@@ -273,6 +356,51 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
     val activeSets: StateFlow<List<SetWithExercise>> =
         activeWorkout.flatMapLatest { w -> if (w == null) flowOf(emptyList()) else dao.setsForWorkout(w.id) }
             .state(emptyList())
+
+    /** The rows on the workout card: planned exercises and sets, plus what the hero added. */
+    val draft: StateFlow<WorkoutDraft?> =
+        kotlinx.coroutines.flow.combine(activeWorkout, settings.workoutDraftJson) { w, json ->
+            if (w == null) null
+            else WorkoutDraft.decode(json)?.takeIf { it.workoutId == w.id } ?: WorkoutDraft.fromPlan(w.id, planDay(w.planDayId))
+        }.state(null)
+
+    private fun editDraft(change: (WorkoutDraft) -> WorkoutDraft) {
+        val d = draft.value ?: return
+        settings.setWorkoutDraftJson(change(d).encode())
+    }
+
+    fun addSetTo(exerciseName: String, logged: Int) = editDraft { it.addSet(exerciseName, logged) }
+    fun removeSetFrom(exerciseName: String, logged: Int) = editDraft { it.removeSet(exerciseName, logged) }
+    fun removeExerciseFromWorkout(exerciseName: String) = editDraft { it.removeExercise(exerciseName) }
+    fun addExerciseToWorkout(exercise: ExerciseEntity) =
+        editDraft { it.addExercise(exercise.name, if (exercise.kind == ExerciseKind.CARDIO) 1 else 3) }
+
+    /** Moves a workout's start and end. A null end keeps a running workout running. */
+    fun updateWorkoutTimes(workoutId: Long, startedAt: Long, finishedAt: Long?) {
+        viewModelScope.launch {
+            dao.updateWorkoutTimes(workoutId, startedAt, finishedAt)
+            checkBadges()
+        }
+    }
+
+    /** "Upper A · Siege of the Upper Keep", for the export. */
+    fun workoutLabel(planDayId: String?): String = planDay(planDayId)?.let { "${it.name} · ${it.questName}" } ?: "Free workout"
+
+    /** Writes every set of every finished workout to [uri] as CSV. */
+    fun exportHistory(uri: android.net.Uri) {
+        val user = userId.value ?: return
+        viewModelScope.launch {
+            val rows = dao.exportRows(user)
+            val csv = HistoryExport.csv(rows, units.value, ::workoutLabel)
+            val ok = withContext(Dispatchers.IO) {
+                runCatching {
+                    getApplication<Application>().contentResolver.openOutputStream(uri, "wt")?.use { it.write(csv.toByteArray(Charsets.UTF_8)) } != null
+                }.getOrDefault(false)
+            }
+            val workouts = rows.map { it.workoutId }.distinct().size
+            _events.emit(GameEvent.Message(if (ok) "Chronicle exported: $workouts workouts, ${rows.size} sets" else "Couldn't write the file"))
+        }
+    }
 
     fun workout(id: Long): Flow<WorkoutEntity?> = dao.workout(id)
     fun setsFor(workoutId: Long): Flow<List<SetWithExercise>> = dao.setsForWorkout(workoutId)
@@ -351,6 +479,7 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
     fun finishWorkout() {
         val workout = activeWorkout.value ?: return
         viewModelScope.launch {
+            settings.setWorkoutDraftJson(null)
             if (dao.setCountForWorkout(workout.id) == 0) {
                 dao.deleteWorkout(workout.id)
                 _events.emit(GameEvent.Message("Empty workout discarded"))
@@ -377,6 +506,7 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
 
     fun discardWorkout() {
         val workout = activeWorkout.value ?: return
+        settings.setWorkoutDraftJson(null)
         viewModelScope.launch { dao.deleteWorkout(workout.id) }
     }
 
@@ -414,5 +544,6 @@ class GymViewModel(app: Application) : AndroidViewModel(app) {
             _events.emit(GameEvent.LevelUp(now, Leveling.title(now)))
             dropChest(ChestTier.IRON, "level", "Reached level $now")
         }
+        checkBadges()
     }
 }

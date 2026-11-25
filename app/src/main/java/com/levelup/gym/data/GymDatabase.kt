@@ -34,14 +34,27 @@ internal val CHESTS_SQL = listOf(
     "CREATE TABLE IF NOT EXISTS `equipped` (`userId` INTEGER NOT NULL, `slot` TEXT NOT NULL, `itemKey` TEXT NOT NULL, PRIMARY KEY(`userId`, `slot`), FOREIGN KEY(`userId`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
 )
 
+/** v4 adds earned badges and streak shields. */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        STREAK_SQL.forEach(db::execSQL)
+    }
+}
+
+internal val STREAK_SQL = listOf(
+    "CREATE TABLE IF NOT EXISTS `badges` (`userId` INTEGER NOT NULL, `badgeKey` TEXT NOT NULL, `earnedAt` INTEGER NOT NULL, PRIMARY KEY(`userId`, `badgeKey`), FOREIGN KEY(`userId`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+    "CREATE TABLE IF NOT EXISTS `shields` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userId` INTEGER NOT NULL, `boughtAt` INTEGER NOT NULL, `cost` INTEGER NOT NULL, FOREIGN KEY(`userId`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+    "CREATE INDEX IF NOT EXISTS `index_shields_userId` ON `shields` (`userId`)",
+)
+
 class Converters {
     @TypeConverter fun kindToString(kind: ExerciseKind): String = kind.name
     @TypeConverter fun stringToKind(value: String): ExerciseKind = ExerciseKind.valueOf(value)
 }
 
 @Database(
-    entities = [UserEntity::class, ExerciseEntity::class, WorkoutEntity::class, SetEntity::class, BodyWeightEntity::class, ChestEntity::class, EquippedEntity::class],
-    version = 3,
+    entities = [UserEntity::class, ExerciseEntity::class, WorkoutEntity::class, SetEntity::class, BodyWeightEntity::class, ChestEntity::class, EquippedEntity::class, BadgeEntity::class, ShieldEntity::class],
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -51,7 +64,7 @@ abstract class GymDatabase : RoomDatabase() {
     companion object {
         fun create(context: Context): GymDatabase =
             Room.databaseBuilder(context, GymDatabase::class.java, "gym.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
     }
 }

@@ -93,6 +93,25 @@ data class WorkoutSummary(
     val xp: Int,
 )
 
+/** One logged set with its workout, for the history export. */
+data class ExportRow(
+    val workoutId: Long,
+    val startedAt: Long,
+    val finishedAt: Long?,
+    val planDayId: String?,
+    val bonusXp: Int,
+    val exerciseName: String,
+    val muscleGroup: String,
+    val exerciseKind: ExerciseKind,
+    val reps: Int,
+    val weightKg: Double,
+    val durationSec: Int,
+    val distanceM: Double,
+    val xp: Int,
+    val isPersonalRecord: Boolean,
+    val createdAt: Long,
+)
+
 data class UserStats(
     val workoutCount: Int,
     val setCount: Int,
@@ -152,4 +171,29 @@ data class EquippedEntity(
     val userId: Long,
     val slot: String,
     val itemKey: String,
+)
+
+/** A badge the hero has earned. Kept so its chest is only handed out once. */
+@Entity(
+    tableName = "badges",
+    primaryKeys = ["userId", "badgeKey"],
+    foreignKeys = [ForeignKey(UserEntity::class, ["id"], ["userId"], onDelete = ForeignKey.CASCADE)],
+)
+data class BadgeEntity(
+    val userId: Long,
+    val badgeKey: String,
+    val earnedAt: Long = System.currentTimeMillis(),
+)
+
+/** A streak shield bought at the forge. Shields from milestones are worked out from the streak itself. */
+@Entity(
+    tableName = "shields",
+    foreignKeys = [ForeignKey(UserEntity::class, ["id"], ["userId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("userId")],
+)
+data class ShieldEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val userId: Long,
+    val boughtAt: Long = System.currentTimeMillis(),
+    val cost: Int,
 )

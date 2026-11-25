@@ -9,6 +9,8 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import com.levelup.gym.MainActivity
@@ -56,30 +58,66 @@ class AppFlowTest {
         shot("1_hero")
 
         compose.onNodeWithText("Begin Upper A", substring = true).performClick()
-        waitFor("Log set")
-        compose.onNodeWithText("Weight (kg)").performTextReplacement("60")
-        compose.onNodeWithText("Log set", substring = true).performClick()
-        compose.onNodeWithText("Log set", substring = true).performClick()
-        compose.onNodeWithText("Weight (kg)").performTextReplacement("62.5")
-        compose.onNodeWithText("Log set", substring = true).performClick()
+        waitFor("LOG NEXT SET")
+        compose.waitForIdle()
+        shot("2a_workout_start")
+        compose.onNodeWithTag("weight-Bench Press-1").performTextReplacement("60")
+        compose.onNodeWithText("LOG NEXT SET").performClick()
+        waitFor("1/4 done")
+        // Set 2 is filled in from set 1.
+        compose.onNodeWithText("LOG NEXT SET").performClick()
+        waitFor("2/4 done")
+        compose.onNodeWithTag("weight-Bench Press-3").performTextReplacement("62.5")
+        compose.onNodeWithText("LOG NEXT SET").performClick()
         waitFor("LEVEL UP!")
         shot("2b_level_up")
         compose.onNodeWithText("Onward!").performClick()
-        waitFor("3/4")
+        waitFor("3/4 done")
         compose.waitForIdle()
         shot("2_workout")
 
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText("BATTLE LOG"))
+        // A set with no weight still ticks off and turns green.
+        compose.onNodeWithContentDescription("Mark Barbell Row set 1 done").performScrollTo()
+        compose.onNodeWithTag("weight-Barbell Row-1").performTextReplacement("")
+        compose.onNodeWithContentDescription("Mark Barbell Row set 1 done").performClick()
+        waitFor("1/4 done · 6-8")
+        compose.onAllNodesWithText("Add a set")[0].performClick()
+        waitFor("3/5 done")
+        compose.onNodeWithContentDescription("Unmark Barbell Row set 1").performScrollTo()
         compose.waitForIdle()
-        waitFor("NEW BEST")
         shot("3_workout_log")
 
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Complete quest", substring = true))
-        compose.onNodeWithText("Complete quest", substring = true).performClick()
+        // Start and end times, set like a phone clock
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithContentDescription("Edit start and end times").performClick()
+        compose.mainClock.advanceTimeBy(600)
+        shot("3b_duration")
+        compose.onNodeWithText("Cancel").performClick()
+        compose.mainClock.advanceTimeBy(600)
+
+        compose.onNodeWithText("Finish").performClick()
+        compose.mainClock.advanceTimeBy(600)
+        shot("3c_finish_confirm")
+        compose.onNodeWithText("Finish quest").performClick()
+        compose.mainClock.advanceTimeBy(600)
+        compose.mainClock.autoAdvance = true
         waitFor("Lower A")
         compose.mainClock.advanceTimeBy(1_000)
         compose.waitForIdle()
         shot("4_hero_after")
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("DAY STREAK"))
+        compose.waitForIdle()
+        shot("4a_hero_streak")
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("See all"))
+        waitFor("2 of 22 earned")
+        compose.waitForIdle()
+        shot("4a1_hero_badges")
+        compose.onNodeWithText("See all").performClick()
+        waitFor("Week of Iron")
+        compose.waitForIdle()
+        shot("4a2_badges")
+        compose.onNodeWithContentDescription("Back").performClick()
+        waitFor("See all")
 
         // Loot: the quest dropped an iron chest (it had a new best)
         compose.onNodeWithText("Treasury").performClick()
@@ -98,6 +136,12 @@ class AppFlowTest {
         compose.onNodeWithText("Chronicle").performClick()
         waitFor("Siege of the Upper Keep")
         shot("5_history")
+        compose.onNodeWithText("Siege of the Upper Keep").performClick()
+        waitFor("Quest bonus")
+        compose.waitForIdle()
+        shot("5b_history_detail")
+        compose.onNodeWithContentDescription("Back").performClick()
+        waitFor("Export")
 
         compose.onNodeWithText("Quests").performClick()
         waitFor("Upper / Lower")

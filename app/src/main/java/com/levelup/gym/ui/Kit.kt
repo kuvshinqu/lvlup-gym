@@ -353,16 +353,16 @@ fun LevelBadge(level: Int, size: Dp = 64.dp, color: Color = GameColors.Gold) {
 
 /** Green reward pill: gem + "+40 XP". */
 @Composable
-fun XpPill(xp: Int, modifier: Modifier = Modifier) {
+fun XpPill(xp: Int, modifier: Modifier = Modifier, compact: Boolean = false, @androidx.annotation.DrawableRes icon: Int = R.drawable.ic_xp_gem) {
     Row(
         modifier
             .drawBehind { chunkyBlock(Color(0xFF2E9E3A), size.height / 2, outline = 2.dp.toPx(), shadow = 2.dp.toPx(), lip = 2.dp.toPx(), gloss = 0.2f) }
             .padding(start = 4.dp, end = 10.dp, top = 3.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MedievalIcon(R.drawable.ic_xp_gem, 18.dp)
+        MedievalIcon(icon, 18.dp)
         Spacer(Modifier.width(3.dp))
-        OutlinedText("+$xp XP", style = MaterialTheme.typography.titleSmall, outlineWidth = 2.5.dp, fontSize = 14.sp)
+        OutlinedText(if (compact) "+$xp" else "+$xp XP", style = MaterialTheme.typography.titleSmall, outlineWidth = 2.5.dp, fontSize = 14.sp, maxLines = 1)
     }
 }
 

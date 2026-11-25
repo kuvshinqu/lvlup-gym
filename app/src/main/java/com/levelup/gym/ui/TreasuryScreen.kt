@@ -60,6 +60,7 @@ private const val CHEST_SLOTS = 4
 fun TreasuryScreen(vm: GymViewModel) {
     val t by vm.treasury.collectAsStateWithLifecycle()
     val look by vm.heroLook.collectAsStateWithLifecycle()
+    val streak by vm.streak.collectAsStateWithLifecycle()
     var opening by remember { mutableStateOf<ChestEntity?>(null) }
 
     Box(Modifier.fillMaxSize()) {
@@ -90,7 +91,7 @@ fun TreasuryScreen(vm: GymViewModel) {
                             }
                         }
                         Text(
-                            "Finish a quest: wooden chest. Set a new best: iron chest. Weekly quest: golden chest. Every level up: iron chest.",
+                            "Finish a quest: wooden chest. Set a new best: iron chest. Weekly quest: golden chest. Every level up: iron chest. Badges and streak milestones bring chests too.",
                             style = MaterialTheme.typography.bodySmall, color = GameColors.Muted,
                         )
                     }
@@ -140,6 +141,25 @@ fun TreasuryScreen(vm: GymViewModel) {
                         }
                         GameButton(onClick = vm::buyChest, enabled = t.gold >= Loot.CHEST_PRICE, style = ButtonStyle.GOLD, height = 46.dp) {
                             Text("Buy ${Loot.CHEST_PRICE}")
+                        }
+                    }
+                }
+            }
+            item {
+                GameCard {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        MedievalIcon(com.levelup.gym.R.drawable.ic_guard_shield, 40.dp)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            OutlinedText("Streak shield  ${streak.shields}/${com.levelup.gym.game.Streak.MAX_SHIELDS}", style = MaterialTheme.typography.titleMedium, outlineWidth = 3.dp)
+                            Text("Guards your streak on one day you miss. Used up by itself.", style = MaterialTheme.typography.bodySmall, color = GameColors.Muted)
+                        }
+                        GameButton(
+                            onClick = vm::buyShield,
+                            enabled = t.gold >= com.levelup.gym.game.Streak.SHIELD_PRICE && streak.shields < com.levelup.gym.game.Streak.MAX_SHIELDS,
+                            style = ButtonStyle.BLUE, height = 46.dp,
+                        ) {
+                            Text("Buy ${com.levelup.gym.game.Streak.SHIELD_PRICE}")
                         }
                     }
                 }

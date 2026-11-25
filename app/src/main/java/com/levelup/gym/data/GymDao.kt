@@ -49,6 +49,10 @@ interface GymDao {
     @Query("UPDATE workouts SET finishedAt = :finishedAt, bonusXp = :bonusXp WHERE id = :workoutId")
     suspend fun finishWorkout(workoutId: Long, finishedAt: Long, bonusXp: Int)
 
+    /** Corrects when a workout started and ended. A null end keeps it in progress. */
+    @Query("UPDATE workouts SET startedAt = :startedAt, finishedAt = :finishedAt WHERE id = :workoutId")
+    suspend fun updateWorkoutTimes(workoutId: Long, startedAt: Long, finishedAt: Long?)
+
     @Query("DELETE FROM workouts WHERE id = :workoutId")
     suspend fun deleteWorkout(workoutId: Long)
 
@@ -122,6 +126,17 @@ interface GymDao {
     )
     fun history(userId: Long): Flow<List<WorkoutSummary>>
 
+    /** Every logged set of every finished workout, oldest first, for the CSV export. */
+    @Query(
+        """SELECT w.id AS workoutId, w.startedAt, w.finishedAt, w.planDayId, w.bonusXp,
+                  e.name AS exerciseName, e.muscleGroup, e.kind AS exerciseKind,
+                  s.reps, s.weightKg, s.durationSec, s.distanceM, s.xp, s.isPersonalRecord, s.createdAt
+           FROM workouts w JOIN sets s ON s.workoutId = w.id JOIN exercises e ON e.id = s.exerciseId
+           WHERE w.userId = :userId AND w.finishedAt IS NOT NULL
+           ORDER BY w.startedAt, s.createdAt, s.id"""
+    )
+    suspend fun exportRows(userId: Long): List<ExportRow>
+
     // Body weight
     @Insert
     suspend fun insertBodyWeight(entry: BodyWeightEntity): Long
@@ -163,4 +178,23 @@ interface GymDao {
 
     @Query("SELECT COUNT(*) FROM sets WHERE workoutId = :workoutId AND isPersonalRecord = 1")
     suspend fun prCountForWorkout(workoutId: Long): Int
+
+    // Streak and badges
+    @Query("SELECT startedAt FROM workouts WHERE userId = :userId AND finishedAt IS NOT NULL")
+    fun finishedStarts(userId: Long): Flow<List<Long>>
+
+    @Query("SELECT COUNT(*) FROM sets s JOIN workouts w ON w.id = s.workoutId WHERE w.userId = :userId AND s.isPersonalRecord = 1")
+    fun recordCount(userId: Long): Flow<Int>
+
+    @Query("SELECT * FROM badges WHERE userId = :userId ORDER BY earnedAt DESC")
+    fun badges(userId: Long): Flow<List<BadgeEntity>>
+
+    @Insert(onConflict = androidx.room.OnConflictStrategy.IGNORE)
+    suspend fun insertBadge(badge: BadgeEntity): Long
+
+    @Query("SELECT * FROM shields WHERE userId = :userId ORDER BY boughtAt")
+    fun shields(userId: Long): Flow<List<ShieldEntity>>
+
+    @Insert
+    suspend fun insertShield(shield: ShieldEntity): Long
 }

@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.levelup.gym.data.GymDatabase
 import com.levelup.gym.data.MIGRATION_1_2
 import com.levelup.gym.data.MIGRATION_2_3
+import com.levelup.gym.data.MIGRATION_3_4
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
@@ -42,15 +43,20 @@ class MigrationTest {
             db.version = 1
         }
 
-        // Open with v2 + migration; Room validates the resulting schema on open.
+        // Open with the latest version + migrations; Room validates the resulting schema on open.
         val room = Room.databaseBuilder(context, GymDatabase::class.java, file.absolutePath)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3).allowMainThreadQueries().build()
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).allowMainThreadQueries().build()
         val dao = room.dao()
         assertEquals(77, dao.totalXp(1).first())
         dao.insertBodyWeight(com.levelup.gym.data.BodyWeightEntity(userId = 1, weightKg = 80.5))
         assertEquals(80.5, dao.latestBodyWeight(1).first()!!.weightKg, 0.001)
         dao.insertChest(com.levelup.gym.data.ChestEntity(userId = 1, tier = "WOODEN", source = "workout"))
         assertEquals(1, dao.chests(1).first().size)
+        dao.insertBadge(com.levelup.gym.data.BadgeEntity(userId = 1, badgeKey = "workouts_1"))
+        assertEquals(-1L, dao.insertBadge(com.levelup.gym.data.BadgeEntity(userId = 1, badgeKey = "workouts_1")))
+        dao.insertShield(com.levelup.gym.data.ShieldEntity(userId = 1, cost = 150))
+        assertEquals(1, dao.shields(1).first().size)
+        assertEquals(1, dao.exportRows(1).size)
         room.close()
     }
 }

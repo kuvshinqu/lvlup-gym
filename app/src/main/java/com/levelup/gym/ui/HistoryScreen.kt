@@ -11,6 +11,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.levelup.gym.R
+import com.levelup.gym.game.HistoryExport
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -38,16 +47,42 @@ import java.time.format.DateTimeFormatter
 private val dateFmt = DateTimeFormatter.ofPattern("EEE d MMM yyyy · HH:mm")
 private fun formatDate(millis: Long) = dateFmt.format(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()))
 
+/** "Wed 25 Nov · 11:32 – 12:41 · 1h 9m" */
+private fun whenText(start: Long, end: Long?): String =
+    listOfNotNull(TimeText.day(start), TimeText.span(start, end), end?.let { TimeText.length(it - start) }).joinToString(" · ")
+
 @Composable
 fun HistoryScreen(vm: GymViewModel, onOpen: (Long) -> Unit) {
     val history by vm.history.collectAsStateWithLifecycle()
     val units by vm.units.collectAsStateWithLifecycle()
 
+    val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        uri?.let { vm.exportHistory(it) }
+    }
+
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Column {
-                Text("CHRONICLE", style = MaterialTheme.typography.labelSmall, color = GameColors.Muted)
-                Text("Workout history", style = MaterialTheme.typography.headlineMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("CHRONICLE", style = MaterialTheme.typography.labelSmall, color = GameColors.Muted)
+                    Text("Workout history", style = MaterialTheme.typography.headlineMedium)
+                }
+                GameButton(
+                    onClick = { export.launch(HistoryExport.fileName()) }, enabled = history.isNotEmpty(),
+                    style = ButtonStyle.GOLD, height = 46.dp,
+                ) {
+                    MedievalIcon(R.drawable.ic_quest_scroll, 22.dp)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Export")
+                }
+            }
+        }
+        if (history.isNotEmpty()) {
+            item {
+                ParchmentNote(
+                    "Every quest is kept on this phone with its start and end time. Export saves all of it as a " +
+                        "spreadsheet file (CSV) you can open in Google Sheets or Excel, or keep as a backup.",
+                )
             }
         }
         if (history.isEmpty()) {
@@ -67,18 +102,16 @@ fun HistoryScreen(vm: GymViewModel, onOpen: (Long) -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(plan?.questName ?: "Free workout", style = MaterialTheme.typography.titleMedium)
-                            Text(formatDate(w.startedAt), style = MaterialTheme.typography.bodySmall, color = GameColors.Muted)
+                            Text(whenText(w.startedAt, w.finishedAt), style = MaterialTheme.typography.bodySmall, color = GameColors.Muted)
                         }
                         XpPill(w.xp)
                     }
-                    val minutes = w.finishedAt?.let { ((it - w.startedAt) / 60_000).toInt() }
                     Text(
                         buildList {
                             add(if (w.exerciseCount == 1) "1 exercise" else "${w.exerciseCount} exercises")
                             add(if (w.setCount == 1) "1 set" else "${w.setCount} sets")
                             if (w.volumeKg > 0) add(UnitsFormat.volume(w.volumeKg, units))
                             if (w.cardioSec > 0) add("${UnitsFormat.duration(w.cardioSec)} cardio")
-                            if (minutes != null) add("$minutes min")
                         }.joinToString(" · "),
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -95,6 +128,7 @@ fun WorkoutDetailScreen(vm: GymViewModel, workoutId: Long, onBack: () -> Unit) {
     val sets by remember(workoutId) { vm.setsFor(workoutId) }.collectAsStateWithLifecycle(emptyList())
     val units by vm.units.collectAsStateWithLifecycle()
     var confirmDelete by remember { mutableStateOf(false) }
+    var editTimes by remember { mutableStateOf(false) }
     val plan = vm.planDay(workout?.planDayId)
 
     Column {
@@ -102,7 +136,7 @@ fun WorkoutDetailScreen(vm: GymViewModel, workoutId: Long, onBack: () -> Unit) {
             title = {
                 Column {
                     Text(plan?.questName ?: "Free workout", style = MaterialTheme.typography.titleMedium)
-                    workout?.let { Text(formatDate(it.startedAt), style = MaterialTheme.typography.bodySmall, color = GameColors.Muted) }
+                    workout?.let { Text(TimeText.fullDay(it.startedAt), style = MaterialTheme.typography.bodySmall, color = GameColors.Muted) }
                 }
             },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
@@ -113,6 +147,19 @@ fun WorkoutDetailScreen(vm: GymViewModel, workoutId: Long, onBack: () -> Unit) {
         )
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             val bonus = workout?.bonusXp ?: 0
+            workout?.let { w ->
+                item {
+                    GameCard(modifier = Modifier.clickable { editTimes = true }.semantics { contentDescription = "Edit start and end times" }) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            MedievalIcon(R.drawable.ic_timer_hourglass, 34.dp)
+                            TimeStat("Start", TimeText.clock(w.startedAt), Modifier.weight(1f))
+                            TimeStat("End", w.finishedAt?.let { TimeText.clock(it) } ?: "-", Modifier.weight(1f))
+                            TimeStat("Time", w.finishedAt?.let { TimeText.length(it - w.startedAt) } ?: "-", Modifier.weight(1.2f))
+                            Icon(Icons.Filled.Edit, null, tint = GameColors.Gold)
+                        }
+                    }
+                }
+            }
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Total", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -143,6 +190,15 @@ fun WorkoutDetailScreen(vm: GymViewModel, workoutId: Long, onBack: () -> Unit) {
         }
     }
 
+    if (editTimes) {
+        workout?.let { w ->
+            DurationDialog(
+                startedAt = w.startedAt, finishedAt = w.finishedAt ?: System.currentTimeMillis(),
+                onDismiss = { editTimes = false },
+                onSave = { start, end -> vm.updateWorkoutTimes(w.id, start, end ?: w.finishedAt); editTimes = false },
+            )
+        }
+    }
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
@@ -155,5 +211,13 @@ fun WorkoutDetailScreen(vm: GymViewModel, workoutId: Long, onBack: () -> Unit) {
             },
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
         )
+    }
+}
+
+@Composable
+private fun TimeStat(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, color = GameColors.Muted)
+        OutlinedText(value, style = MaterialTheme.typography.titleLarge, outlineWidth = 3.dp, maxLines = 1)
     }
 }

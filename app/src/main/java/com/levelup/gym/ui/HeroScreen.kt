@@ -36,7 +36,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.ui.draw.drawBehind
 
 @Composable
-fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -> Unit) {
+fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -> Unit, onOpenBadges: () -> Unit = {}) {
     val progress by vm.progress.collectAsStateWithLifecycle()
     val name by vm.heroName.collectAsStateWithLifecycle()
     val skills by vm.skills.collectAsStateWithLifecycle()
@@ -49,6 +49,8 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
     val bodyWeights by vm.bodyWeights30d.collectAsStateWithLifecycle()
     val treasury by vm.treasury.collectAsStateWithLifecycle()
     val look by vm.heroLook.collectAsStateWithLifecycle()
+    val streak by vm.streak.collectAsStateWithLifecycle()
+    val badges by vm.badges.collectAsStateWithLifecycle()
 
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -56,6 +58,7 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StreakPill(streak.days, streak.days > 0)
                 ResourcePill("${treasury.gold}") { Coin(32.dp) }
                 if (treasury.unopened.isNotEmpty()) {
                     ResourcePill("${treasury.unopened.size}") {
@@ -110,6 +113,9 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
             }
         }
 
+        // Streak
+        item { StreakCard(streak) }
+
         // Weekly quest
         item {
             GameCard(accent = GameColors.Arcane) {
@@ -133,6 +139,10 @@ fun HeroScreen(vm: GymViewModel, onOpenWorkout: () -> Unit, onOpenSettings: () -
                 }
             }
         }
+
+        // Badges
+        item { SectionLabel("Badges") }
+        item { BadgeShelf(badges, onSeeAll = onOpenBadges) }
 
         // Body weight
         item { BodyWeightCard(bodyWeight, bodyWeights, units, onLog = vm::logBodyWeight) }
