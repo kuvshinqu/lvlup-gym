@@ -11,12 +11,11 @@ An Android gym tracker where you are a hero who levels up. Kotlin + Jetpack Comp
 - **Body weight**: weigh-ins on the hero screen with the latest value and a 30-day trend line. Never affects XP. Bodyweight exercises (push-up, pull-up, plank, hanging leg raise) show "× bodyweight", plus any added weight.
 - **Settings**: hero name, kg/km or lb/mi. Data is always stored in kg and metres.
 
-## XP rules (`app/src/main/java/com/levelup/gym/game/Leveling.kt`)
-- Strength set: 10 + 1 per rep (max 20) + 1 per 50 kg of volume (max 40)
-- Cardio: 10 + 1 per minute (max 60) + 2 per km (max 30)
-- New best weight on an exercise: +25
-- Finish a workout: +50; 4th workout of the week: +100 more
-- Hero level L→L+1 costs 100·L XP; skills cost 50·L
+## Game rules (`app/src/main/java/com/levelup/gym/game/`)
+- XP per set grows with effort against your best (estimated 1-rep max), plus a bonus for a new best; finishing a workout and the weekly quest add more (`Leveling.kt`).
+- Chests drop for workouts, new bests, level ups, the weekly quest, badges and streak milestones, and hold gear that boosts a skill's XP (`Loot.kt`).
+- Daily streak: rest days count up to the program's limit; a missed day resets it unless a shield guards it (`Streak.kt`). 22 badges (`Badges.kt`).
+- The workout screen lists each exercise's sets to tick off, with a live timer; start and end times can be edited, and the whole history exports to CSV.
 
 ## Build
 Needs JDK 17+ and the Android SDK (platform 36).
